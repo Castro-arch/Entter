@@ -66,6 +66,15 @@ orders (
   created_at
 )
 
+-- Usuário com acesso ao painel do organizador (login/senha).
+-- Não estava no schema original deste documento: o tenant representa a
+-- organização, não uma pessoa autenticável, então o login precisa de uma
+-- identidade própria. Um tenant pode ter múltiplos usuários (ex: dono + staff).
+users (
+  id, tenant_id, name, email UNIQUE, password_hash,
+  role (owner | staff), created_at
+)
+
 -- Participante (criado após pagamento aprovado)
 participants (
   id, order_id, event_id, name,
@@ -189,10 +198,11 @@ POST   /events/:id/certificates/send-all
 - `qr_token`: JWT/HMAC assinado com secret por evento, nunca ID cru.
 - Validação de assinatura tanto no client (leitura otimista) quanto no servidor (registro oficial).
 - LGPD: dados de participante (nome, e-mail, telefone) tratados com mesmo padrão de criptografia/compliance já usado no ERP.
+- **Sessão do organizador:** JWT assinado (`sub`, `tenantId`, `role`) transportado em cookie `httpOnly` + `sameSite=lax`, não em `localStorage`. Evita exposição do token a XSS no painel do organizador; o fallback `Authorization: Bearer` continua disponível para clientes não-browser (scripts, testes). Senha com `bcrypt` (10 rounds).
 
 ## 7. Fases sugeridas de implementação
 
-1. Schema completo + auth de tenant/organizador.
+1. ✅ Schema completo + auth de tenant/organizador (`backend/prisma/schema.prisma`, `backend/src/auth`).
 2. Wizard de criação de evento (etapas 1–5) + editor de posicionamento.
 3. Checkout + webhook Asaas + geração automática de participante/credencial.
 4. Módulo de check-in (QR + manual) com offline-first e dashboard em tempo real.
