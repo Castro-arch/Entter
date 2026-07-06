@@ -106,13 +106,23 @@ entter/
 ## Getting started
 
 ```bash
-npm install                      # installs backend + frontend workspaces
-cp backend/.env.example backend/.env   # set DATABASE_URL and JWT_SECRET
+npm install                            # installs backend + frontend workspaces
+
+# Backend API (http://localhost:3000)
+cp backend/.env.example backend/.env         # set DATABASE_URL and JWT_SECRET
 npm run --workspace backend prisma:migrate   # apply the schema to PostgreSQL
 npm run --workspace backend start:dev
+
+# Organizer dashboard (http://localhost:3001) — in a second terminal
+cp frontend/.env.example frontend/.env.local # points NEXT_PUBLIC_API_URL at the API
+npm run --workspace frontend dev
 ```
 
-See [`backend/README.md`](./backend/README.md) for backend-specific details (auth endpoints, migrations).
+The dashboard runs on a separate origin and authenticates against the API via
+the httpOnly session cookie, so the backend allows credentialed CORS from
+`FRONTEND_URL` (see `backend/.env.example`).
+
+See [`backend/README.md`](./backend/README.md) for backend-specific details (auth endpoints, migrations) and [`frontend/README.md`](./frontend/README.md) for the dashboard.
 
 ## Author
 
