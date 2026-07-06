@@ -105,7 +105,14 @@ entter/
 
 ## Getting started
 
-> Setup instructions will be added once the initial backend/frontend scaffolding lands.
+```bash
+npm install                      # installs backend + frontend workspaces
+cp backend/.env.example backend/.env   # set DATABASE_URL and JWT_SECRET
+npm run --workspace backend prisma:migrate   # apply the schema to PostgreSQL
+npm run --workspace backend start:dev
+```
+
+See [`backend/README.md`](./backend/README.md) for backend-specific details (auth endpoints, migrations).
 
 ## Author
 
