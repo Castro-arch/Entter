@@ -1,0 +1,8 @@
+{
+  "name": "entter",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ]
+}
