@@ -129,6 +129,11 @@ export class EventsService {
         credentialSentAt: true,
         certificateSentAt: true,
         order: { select: { buyerEmail: true } },
+        // One row per event day; the client picks the one matching whichever
+        // day is selected (see the Check-in → Participants tab).
+        attendance: {
+          select: { eventDayId: true, status: true, checkedInAt: true },
+        },
       },
     });
   }
