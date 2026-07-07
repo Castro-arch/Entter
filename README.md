@@ -101,7 +101,7 @@ entter/
 - [x] Event creation wizard (details, dates, ticket types)
 - [x] Credential positioning editor (drag-to-place, percentage-based)
 - [x] Checkout & payment webhook integration (Asaas)
-- [ ] Check-in module (QR + manual) with realtime dashboard
+- [x] Check-in module (QR + manual) with realtime dashboard
 - [ ] Certificate dispatch module
 - [x] Public event landing pages
 

@@ -109,15 +109,23 @@ export default function EventDetailPage() {
         </Link>
         <div className="flex items-center justify-between gap-4">
           <h1 className="text-2xl font-semibold tracking-tight">{event.name}</h1>
-          {event.status === 'PUBLISHED' && (
+          <div className="flex shrink-0 items-center gap-4">
             <Link
-              href={`/events/${event.id}`}
-              target="_blank"
-              className="shrink-0 text-sm font-medium underline underline-offset-4"
+              href={`/dashboard/events/${event.id}/check-in`}
+              className="text-sm font-medium underline underline-offset-4"
             >
-              View public page ↗
+              Check-in
             </Link>
-          )}
+            {event.status === 'PUBLISHED' && (
+              <Link
+                href={`/events/${event.id}`}
+                target="_blank"
+                className="text-sm font-medium underline underline-offset-4"
+              >
+                View public page ↗
+              </Link>
+            )}
+          </div>
         </div>
       </div>
 

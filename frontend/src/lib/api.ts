@@ -216,3 +216,68 @@ export const eventsApi = {
       body: JSON.stringify(input),
     }),
 };
+
+export type CheckInMethod = 'QR' | 'MANUAL';
+
+export interface CheckInInput {
+  eventDayId: string;
+  method: CheckInMethod;
+  qrToken?: string;
+  participantId?: string;
+  /** Echoed back by the API so the offline queue can reconcile the result. */
+  clientId?: string;
+}
+
+export type AttendanceRowStatus = 'PENDING' | 'PRESENT' | 'ABSENT';
+
+export interface Attendance {
+  id: string;
+  status: AttendanceRowStatus;
+  checkedInAt: string | null;
+  participant: { id: string; name: string };
+}
+
+export interface CheckInResult {
+  clientId?: string;
+  status: 'checked_in' | 'already_checked_in' | 'error';
+  message?: string;
+  attendance?: Attendance;
+}
+
+export interface DaySummary {
+  eventDayId: string;
+  total: number;
+  present: number;
+  missing: number;
+}
+
+export interface AttendanceSearchResult {
+  id: string;
+  name: string;
+  willNotAttend: boolean;
+  attendance: { id: string; status: AttendanceRowStatus; checkedInAt: string | null } | null;
+}
+
+export const attendanceApi = {
+  checkIn: (eventId: string, input: CheckInInput) =>
+    request<CheckInResult>(`/events/${eventId}/attendance/check-in`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+  batchSync: (eventId: string, checkIns: CheckInInput[]) =>
+    request<CheckInResult[]>(`/events/${eventId}/attendance/batch-sync`, {
+      method: 'POST',
+      body: JSON.stringify({ checkIns }),
+    }),
+  summary: (eventId: string) =>
+    request<DaySummary[]>(`/events/${eventId}/attendance/summary`),
+  search: (eventId: string, eventDayId: string, query: string) =>
+    request<AttendanceSearchResult[]>(
+      `/events/${eventId}/attendance/search?eventDayId=${encodeURIComponent(eventDayId)}&q=${encodeURIComponent(query)}`,
+    ),
+  setWillNotAttend: (eventId: string, participantId: string, willNotAttend: boolean) =>
+    request<{ id: string }>(
+      `/events/${eventId}/attendance/participants/${participantId}/will-not-attend`,
+      { method: 'PATCH', body: JSON.stringify({ willNotAttend }) },
+    ),
+};
