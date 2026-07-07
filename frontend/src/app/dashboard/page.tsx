@@ -67,22 +67,24 @@ export default function DashboardPage() {
       {events && events.length > 0 && (
         <ul className="flex flex-col gap-3">
           {events.map((event) => (
-            <li
-              key={event.id}
-              className="flex items-center justify-between rounded-xl border border-black/10 px-4 py-4 dark:border-white/10"
-            >
-              <div className="flex flex-col gap-1">
-                <span className="font-medium">{event.name}</span>
-                <span className="text-sm text-black/60 dark:text-white/60">
-                  {formatDays(event)} · {event.ticketTypes.length} ticket type
-                  {event.ticketTypes.length === 1 ? '' : 's'}
-                </span>
-              </div>
-              <span
-                className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusStyles[event.status]}`}
+            <li key={event.id}>
+              <Link
+                href={`/dashboard/events/${event.id}`}
+                className="flex items-center justify-between rounded-xl border border-black/10 px-4 py-4 transition-colors hover:border-black/25 dark:border-white/10 dark:hover:border-white/25"
               >
-                {event.status.toLowerCase()}
-              </span>
+                <div className="flex flex-col gap-1">
+                  <span className="font-medium">{event.name}</span>
+                  <span className="text-sm text-black/60 dark:text-white/60">
+                    {formatDays(event)} · {event.ticketTypes.length} ticket type
+                    {event.ticketTypes.length === 1 ? '' : 's'}
+                  </span>
+                </div>
+                <span
+                  className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusStyles[event.status]}`}
+                >
+                  {event.status.toLowerCase()}
+                </span>
+              </Link>
             </li>
           ))}
         </ul>

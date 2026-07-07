@@ -47,6 +47,17 @@ export interface TicketType {
   saleEndsAt: string | null;
 }
 
+export type TextAlign = 'left' | 'center' | 'right';
+
+/** Resolution-independent placement of the attendee name on the credential. */
+export interface NamePosition {
+  xPct: number;
+  yPct: number;
+  fontPct?: number;
+  color?: string;
+  align?: TextAlign;
+}
+
 export interface EventEntity {
   id: string;
   name: string;
@@ -54,9 +65,24 @@ export interface EventEntity {
   location: string | null;
   coverImageUrl: string | null;
   status: EventStatus;
+  credentialArtworkUrl: string | null;
+  credentialNamePosition: NamePosition | null;
   createdAt: string;
   eventDays: EventDay[];
   ticketTypes: TicketType[];
+}
+
+export interface UpdateEventInput {
+  name?: string;
+  description?: string;
+  location?: string;
+  coverImageUrl?: string;
+  status?: EventStatus;
+}
+
+export interface UpdateCredentialInput {
+  artworkUrl?: string;
+  namePosition?: NamePosition;
 }
 
 export interface CreateEventInput {
@@ -144,6 +170,16 @@ export const eventsApi = {
   create: (input: CreateEventInput) =>
     request<EventEntity>('/events', {
       method: 'POST',
+      body: JSON.stringify(input),
+    }),
+  update: (id: string, input: UpdateEventInput) =>
+    request<EventEntity>(`/events/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    }),
+  updateCredential: (id: string, input: UpdateCredentialInput) =>
+    request<EventEntity>(`/events/${id}/credential`, {
+      method: 'PATCH',
       body: JSON.stringify(input),
     }),
 };

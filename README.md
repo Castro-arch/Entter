@@ -99,7 +99,7 @@ entter/
 - [x] QR check-in performance design (offline-first, locking strategy)
 - [x] Organizer authentication (API + dashboard login/registration)
 - [x] Event creation wizard (details, dates, ticket types)
-- [ ] Credential positioning editor
+- [x] Credential positioning editor (drag-to-place, percentage-based)
 - [ ] Checkout & payment webhook integration
 - [ ] Check-in module (QR + manual) with realtime dashboard
 - [ ] Certificate dispatch module
