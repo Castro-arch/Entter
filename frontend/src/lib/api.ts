@@ -30,6 +30,49 @@ export interface LoginInput {
   password: string;
 }
 
+export type EventStatus = 'DRAFT' | 'PUBLISHED' | 'FINISHED';
+
+export interface EventDay {
+  id: string;
+  date: string;
+  orderIndex: number;
+}
+
+export interface TicketType {
+  id: string;
+  name: string;
+  /** Serialized from a Prisma Decimal, so it arrives as a string. */
+  price: string;
+  quantityAvailable: number;
+  saleEndsAt: string | null;
+}
+
+export interface EventEntity {
+  id: string;
+  name: string;
+  description: string | null;
+  location: string | null;
+  coverImageUrl: string | null;
+  status: EventStatus;
+  createdAt: string;
+  eventDays: EventDay[];
+  ticketTypes: TicketType[];
+}
+
+export interface CreateEventInput {
+  name: string;
+  description?: string;
+  location?: string;
+  coverImageUrl?: string;
+  days: { date: string }[];
+  ticketTypes?: {
+    name: string;
+    price: number;
+    quantityAvailable: number;
+    saleEndsAt?: string;
+  }[];
+}
+
 /** Error carrying the HTTP status and a human-readable message from the API. */
 export class ApiError extends Error {
   constructor(
@@ -93,4 +136,14 @@ export const authApi = {
   logout: () =>
     request<{ success: boolean }>('/auth/logout', { method: 'POST' }),
   me: () => request<{ user: User }>('/auth/me'),
+};
+
+export const eventsApi = {
+  list: () => request<EventEntity[]>('/events'),
+  get: (id: string) => request<EventEntity>(`/events/${id}`),
+  create: (input: CreateEventInput) =>
+    request<EventEntity>('/events', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
 };
