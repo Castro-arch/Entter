@@ -164,6 +164,39 @@ export const authApi = {
   me: () => request<{ user: User }>('/auth/me'),
 };
 
+/** Public, attendee-facing shape (no tenant/credential fields). */
+export interface PublicEvent {
+  id: string;
+  name: string;
+  description: string | null;
+  location: string | null;
+  coverImageUrl: string | null;
+  eventDays: EventDay[];
+  ticketTypes: TicketType[];
+}
+
+export interface CreateOrderInput {
+  ticketTypeId: string;
+  buyerName: string;
+  buyerEmail: string;
+  buyerPhone?: string;
+}
+
+export interface CheckoutResult {
+  orderId: string;
+  status: string;
+  paymentUrl: string;
+}
+
+export const publicApi = {
+  getEvent: (id: string) => request<PublicEvent>(`/public/events/${id}`),
+  createOrder: (eventId: string, input: CreateOrderInput) =>
+    request<CheckoutResult>(`/public/events/${eventId}/checkout`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+};
+
 export const eventsApi = {
   list: () => request<EventEntity[]>('/events'),
   get: (id: string) => request<EventEntity>(`/events/${id}`),
