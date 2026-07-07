@@ -107,7 +107,18 @@ export default function EventDetailPage() {
         >
           ← Back to events
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">{event.name}</h1>
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="text-2xl font-semibold tracking-tight">{event.name}</h1>
+          {event.status === 'PUBLISHED' && (
+            <Link
+              href={`/events/${event.id}`}
+              target="_blank"
+              className="shrink-0 text-sm font-medium underline underline-offset-4"
+            >
+              View public page ↗
+            </Link>
+          )}
+        </div>
       </div>
 
       <form onSubmit={handleSave} className="flex flex-col gap-4">

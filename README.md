@@ -103,7 +103,7 @@ entter/
 - [ ] Checkout & payment webhook integration
 - [ ] Check-in module (QR + manual) with realtime dashboard
 - [ ] Certificate dispatch module
-- [ ] Public event landing pages
+- [x] Public event landing pages
 
 ## Getting started
 
