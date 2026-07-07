@@ -4,18 +4,67 @@ import {
   type ButtonHTMLAttributes,
   type InputHTMLAttributes,
   type ReactNode,
+  type TextareaHTMLAttributes,
 } from 'react';
 
-/** Primary action button that fills its container. */
+type ButtonVariant = 'primary' | 'secondary';
+
+const buttonVariants: Record<ButtonVariant, string> = {
+  primary: 'bg-foreground text-background hover:opacity-90',
+  secondary:
+    'border border-black/15 hover:bg-black/[.04] dark:border-white/20 dark:hover:bg-white/[.06]',
+};
+
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: ButtonVariant;
+  fullWidth?: boolean;
+}
+
 export function Button({
   className = '',
+  variant = 'primary',
+  fullWidth = true,
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement>) {
+}: ButtonProps) {
   return (
     <button
-      className={`inline-flex h-11 w-full items-center justify-center rounded-lg bg-foreground px-4 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+      className={`inline-flex h-11 items-center justify-center rounded-lg px-4 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
+        fullWidth ? 'w-full' : ''
+      } ${buttonVariants[variant]} ${className}`}
       {...props}
     />
+  );
+}
+
+const fieldClass = (error?: string) =>
+  `rounded-lg border bg-transparent px-3 text-sm outline-none transition-colors focus:border-foreground ${
+    error ? 'border-red-500' : 'border-black/15 dark:border-white/20'
+  }`;
+
+function FieldShell({
+  label,
+  htmlFor,
+  error,
+  hint,
+  children,
+}: {
+  label: string;
+  htmlFor: string;
+  error?: string;
+  hint?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={htmlFor} className="text-sm font-medium">
+        {label}
+      </label>
+      {children}
+      {hint && !error && (
+        <p className="text-xs text-black/50 dark:text-white/50">{hint}</p>
+      )}
+      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+    </div>
   );
 }
 
@@ -31,24 +80,40 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
     const generatedId = useId();
     const inputId = id ?? generatedId;
     return (
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor={inputId} className="text-sm font-medium">
-          {label}
-        </label>
+      <FieldShell label={label} htmlFor={inputId} error={error} hint={hint}>
         <input
           ref={ref}
           id={inputId}
           aria-invalid={error ? true : undefined}
-          className={`h-11 rounded-lg border bg-transparent px-3 text-sm outline-none transition-colors focus:border-foreground ${
-            error ? 'border-red-500' : 'border-black/15 dark:border-white/20'
-          } ${className}`}
+          className={`h-11 ${fieldClass(error)} ${className}`}
           {...props}
         />
-        {hint && !error && (
-          <p className="text-xs text-black/50 dark:text-white/50">{hint}</p>
-        )}
-        {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
-      </div>
+      </FieldShell>
+    );
+  },
+);
+
+interface TextAreaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
+  label: string;
+  error?: string;
+  hint?: string;
+}
+
+/** Labelled multi-line input. */
+export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
+  function TextArea({ label, error, hint, id, className = '', ...props }, ref) {
+    const generatedId = useId();
+    const inputId = id ?? generatedId;
+    return (
+      <FieldShell label={label} htmlFor={inputId} error={error} hint={hint}>
+        <textarea
+          ref={ref}
+          id={inputId}
+          aria-invalid={error ? true : undefined}
+          className={`min-h-24 py-2 ${fieldClass(error)} ${className}`}
+          {...props}
+        />
+      </FieldShell>
     );
   },
 );

@@ -4,7 +4,7 @@
 
 **Event credentialing & check-in platform built for speed, reliability, and scale.**
 
-*Ticketing, personalized credential generation, and QR-based check-in — engineered to work flawlessly even on unstable venue networks.*
+*Ticketing, personalized credential generation, and QR-based check-in engineered to work flawlessly even on unstable venue networks.*
 
 [![Status](https://img.shields.io/badge/status-in%20development-yellow)](#roadmap)
 [![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
@@ -27,9 +27,9 @@ Entter is designed around a single constraint: **check-in must be fast and corre
 ## What it does
 
 - **Ticketing** — attendees purchase tickets directly through checkout (Asaas integration); payment confirmation is the single source of truth that provisions each attendee.
-- **Personalized credentials** — organizers upload their own artwork; the system composites each attendee's name onto it automatically, with a visual drag-and-drop positioning editor (percentage-based coordinates, resolution-independent).
-- **QR-based & manual check-in** — single-day events unlock a manual roll-call view; multi-day events unlock QR scanning with manual fallback. Same data model powers both.
-- **Certificates** — dispatched manually or automatically on a delay after the event ends.
+- **Personalized credentials** Organizers upload their own artwork; the system composites each attendee's name onto it automatically, with a visual drag-and-drop positioning editor (percentage-based coordinates, resolution-independent).
+- **QR-based & manual check-in** Single-day events unlock a manual roll-call view; multi-day events unlock QR scanning with manual fallback. Same data model powers both.
+- **Certificates** Dispatched manually or automatically on a delay after the event ends.
 
 ## Engineering decisions worth reading
 
@@ -97,7 +97,9 @@ entter/
 
 - [x] System architecture & data model
 - [x] QR check-in performance design (offline-first, locking strategy)
-- [ ] Event creation wizard + positioning editor
+- [x] Organizer authentication (API + dashboard login/registration)
+- [x] Event creation wizard (details, dates, ticket types)
+- [ ] Credential positioning editor
 - [ ] Checkout & payment webhook integration
 - [ ] Check-in module (QR + manual) with realtime dashboard
 - [ ] Certificate dispatch module
@@ -126,8 +128,8 @@ See [`backend/README.md`](./backend/README.md) for backend-specific details (aut
 
 ## Author
 
-Built by **José Arthur de Castro Tavares** — full-stack developer, AI student.
+Built by **Brazillian Mark** — the boss.
 
 ## License
 
-MIT — see [LICENSE](./LICENSE).
+MIT see [LICENSE](./LICENSE).
