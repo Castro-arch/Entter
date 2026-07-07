@@ -35,6 +35,19 @@ npm run start:prod    # production build output
 - `POST /auth/logout` — clears the cookie.
 - `GET /auth/me` — returns the authenticated user (requires the cookie or an `Authorization: Bearer <token>` header).
 
+## Events
+
+All routes require authentication and are scoped to the caller's tenant — an
+organizer can never read or modify another tenant's events.
+
+- `POST /events` — creates an event with its days and (optional) ticket types.
+  At least one day is required; the day count is what later distinguishes
+  single-day (manual roll-call) from multi-day (QR) check-in. Starts as `DRAFT`.
+- `GET /events` — lists the tenant's events (newest first) with days and ticket types.
+- `GET /events/:id` — returns a single event; `404` if it isn't the tenant's.
+- `PATCH /events/:id` — updates the event's own fields (name, description,
+  location, cover image, `status`). Days and ticket types are managed separately.
+
 ## Tests
 
 ```bash
