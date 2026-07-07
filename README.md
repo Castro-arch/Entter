@@ -100,7 +100,7 @@ entter/
 - [x] Organizer authentication (API + dashboard login/registration)
 - [x] Event creation wizard (details, dates, ticket types)
 - [x] Credential positioning editor (drag-to-place, percentage-based)
-- [ ] Checkout & payment webhook integration
+- [x] Checkout & payment webhook integration (Asaas)
 - [ ] Check-in module (QR + manual) with realtime dashboard
 - [ ] Certificate dispatch module
 - [x] Public event landing pages

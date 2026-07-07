@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { CheckoutModule } from './checkout/checkout.module';
 import { EventsModule } from './events/events.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PublicModule } from './public/public.module';
@@ -14,6 +15,7 @@ import { PublicModule } from './public/public.module';
     AuthModule,
     EventsModule,
     PublicModule,
+    CheckoutModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -61,6 +61,21 @@ credential/certificate config).
   types; `404` for drafts, finished, or unknown events.
 - `GET /public/tenants/:subdomain/events` — an organizer's published events.
 
+## Checkout & payments
+
+- `POST /public/events/:id/checkout` — starts a purchase for a ticket type
+  (buyer name/email/phone). Creates a `PENDING` order, opens an Asaas charge,
+  and returns a `paymentUrl`.
+- `POST /webhooks/asaas` — Asaas payment webhook. On a settled payment
+  (`PAYMENT_CONFIRMED`/`PAYMENT_RECEIVED`) it marks the order `PAID`, provisions
+  the attendee (with a signed QR token), and decrements the ticket stock — all
+  in one transaction, and **idempotently** (repeat webhooks are no-ops). If
+  `ASAAS_WEBHOOK_TOKEN` is set, the `asaas-access-token` header must match.
+
+With no `ASAAS_API_KEY`, checkout runs in **dev mode**: no real charge is
+created and the buyer is sent to a local pending page, so the whole flow —
+including the webhook — can be exercised without Asaas credentials.
+
 ## Tests
 
 ```bash
