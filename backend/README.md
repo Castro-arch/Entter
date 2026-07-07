@@ -51,6 +51,16 @@ organizer can never read or modify another tenant's events.
   attendee-name placement (`xPct`/`yPct`/`fontPct`/`color`/`align`), stored as
   percentages so the layout is resolution-independent.
 
+## Public
+
+Unauthenticated, attendee-facing endpoints. They only ever expose `PUBLISHED`
+events and a safe subset of fields (never the tenant id, Asaas ids, or
+credential/certificate config).
+
+- `GET /public/events/:id` — a single published event with its days and ticket
+  types; `404` for drafts, finished, or unknown events.
+- `GET /public/tenants/:subdomain/events` — an organizer's published events.
+
 ## Tests
 
 ```bash
