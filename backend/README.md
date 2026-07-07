@@ -8,7 +8,10 @@ NestJS API for the Entter event credentialing & check-in platform. See the [root
 - **Database:** PostgreSQL via [Prisma ORM](https://www.prisma.io) (v7, driver adapters — see `src/prisma/prisma.service.ts`)
 - **Auth:** JWT stored in an httpOnly cookie, `bcrypt` password hashing
 - **Realtime:** Socket.IO gateway for the check-in dashboard (`src/attendance/attendance.gateway.ts`)
-- **Cache / locks:** Redis (`ioredis`) — check-in dedup lock and cached attendance counters
+- **Cache / locks / queues:** Redis (`ioredis`) — check-in dedup lock, cached
+  attendance counters, and the `BullMQ` certificate render/send queue
+- **Certificates:** `pdf-lib` compositing + `nodemailer` delivery, rendered and
+  sent asynchronously on the certificate queue
 
 ## Setup
 
@@ -53,6 +56,11 @@ organizer can never read or modify another tenant's events.
 - `PATCH /events/:id/credential` — sets the credential artwork URL and the
   attendee-name placement (`xPct`/`yPct`/`fontPct`/`color`/`align`), stored as
   percentages so the layout is resolution-independent.
+- `PATCH /events/:id/certificate` — sets the certificate template URL, the
+  same `%`-based name placement, `dispatchMode` (`MANUAL`/`AUTO`), and
+  `autoDelayHours`. Changing `dispatchMode` or `autoDelayHours` clears
+  `certificatesDispatchedAt`, so an edited event is eligible for the
+  auto-dispatch sweep again.
 
 ## Public
 
@@ -116,6 +124,36 @@ signs it with a symmetric secret (`QR_SECRET`) that must stay server-side.
 The scanner UI decodes the *unsigned* body only to show an optimistic "checking
 in…" state; the server performs the real signature check in
 `AttendanceService.checkIn`.
+
+## Participants
+
+- `GET /events/:id/participants` — the tenant's attendee list for an event,
+  with per-attendee credential/certificate send timestamps.
+
+## Certificates
+
+- `POST /events/:eventId/participants/:participantId/certificate` — queues
+  one participant's certificate for render + email.
+- `POST /events/:eventId/certificates/send-all` — queues every eligible
+  participant (no certificate sent yet, not marked `willNotAttend`) for the
+  event.
+
+Both endpoints only enqueue a `BullMQ` job and return immediately — the
+actual PDF render (`pdf-lib`, compositing the name onto
+`certificateTemplateUrl` at `certificateNamePosition`, the same `%`-based
+placement as the credential editor) and email happen in
+`certificates.worker.ts`, off the request thread.
+
+**Auto-dispatch:** when `certificateDispatchMode` is `AUTO`, a repeatable
+BullMQ job sweeps every 15 minutes for events whose last day +
+`certificateAutoDelayHours` has passed and haven't been dispatched yet
+(`Event.certificatesDispatchedAt`), and queues them the same way. This trades
+the doc's per-event delayed job for a small polling sweep — simpler, and nothing
+needs to be rescheduled or cancelled when an organizer edits the event later.
+
+With no `SMTP_HOST`, certificate email sends run in **dev mode**: the email is
+logged instead of sent, so the render/queue/send pipeline can be exercised
+without real SMTP credentials — same pattern as `ASAAS_API_KEY`.
 
 ## Tests
 

@@ -8,6 +8,7 @@ import { Alert, Button, TextArea, TextField } from '@/components/ui';
 import {
   ApiError,
   eventsApi,
+  type CertificateDispatchMode,
   type EventEntity,
   type EventStatus,
 } from '@/lib/api';
@@ -42,6 +43,13 @@ export default function EventDetailPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  const [certTemplateUrl, setCertTemplateUrl] = useState('');
+  const [certDispatchMode, setCertDispatchMode] = useState<CertificateDispatchMode>('MANUAL');
+  const [certAutoDelayHours, setCertAutoDelayHours] = useState('24');
+  const [certSaveError, setCertSaveError] = useState<string | null>(null);
+  const [certSaving, setCertSaving] = useState(false);
+  const [certSaved, setCertSaved] = useState(false);
+
   useEffect(() => {
     eventsApi
       .get(eventId)
@@ -51,6 +59,9 @@ export default function EventDetailPage() {
         setDescription(data.description ?? '');
         setLocation(data.location ?? '');
         setStatus(data.status);
+        setCertTemplateUrl(data.certificateTemplateUrl ?? '');
+        setCertDispatchMode(data.certificateDispatchMode);
+        setCertAutoDelayHours(String(data.certificateAutoDelayHours ?? 24));
       })
       .catch((err) =>
         setLoadError(err instanceof ApiError ? err.message : 'Failed to load event'),
@@ -75,6 +86,28 @@ export default function EventDetailPage() {
       setSaveError(err instanceof ApiError ? err.message : 'Failed to save changes');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleSaveCertificate(formEvent: FormEvent<HTMLFormElement>) {
+    formEvent.preventDefault();
+    setCertSaveError(null);
+    setCertSaving(true);
+    setCertSaved(false);
+    try {
+      const updated = await eventsApi.updateCertificate(eventId, {
+        templateUrl: certTemplateUrl.trim() || undefined,
+        dispatchMode: certDispatchMode,
+        autoDelayHours: Number(certAutoDelayHours) || 0,
+      });
+      setEvent(updated);
+      setCertSaved(true);
+    } catch (err) {
+      setCertSaveError(
+        err instanceof ApiError ? err.message : 'Failed to save certificate settings',
+      );
+    } finally {
+      setCertSaving(false);
     }
   }
 
@@ -115,6 +148,12 @@ export default function EventDetailPage() {
               className="text-sm font-medium underline underline-offset-4"
             >
               Check-in
+            </Link>
+            <Link
+              href={`/dashboard/events/${event.id}/participants`}
+              className="text-sm font-medium underline underline-offset-4"
+            >
+              Participants
             </Link>
             {event.status === 'PUBLISHED' && (
               <Link
@@ -217,6 +256,52 @@ export default function EventDetailPage() {
           initialPosition={event.credentialNamePosition}
         />
       </section>
+
+      <form onSubmit={handleSaveCertificate} className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-lg font-medium">Certificate</h2>
+          <p className="text-sm text-black/60 dark:text-white/60">
+            PDF template attendees receive after the event. The name is printed
+            centered on the page — use the participants list to send manually,
+            or switch to automatic dispatch below.
+          </p>
+        </div>
+        {certSaveError && <Alert>{certSaveError}</Alert>}
+        <TextField
+          label="Template URL (PDF)"
+          placeholder="https://…"
+          value={certTemplateUrl}
+          onChange={(e) => setCertTemplateUrl(e.target.value)}
+        />
+        <label className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium">Dispatch</span>
+          <select
+            className="h-11 rounded-lg border border-black/15 bg-transparent px-3 text-sm outline-none focus:border-foreground dark:border-white/20"
+            value={certDispatchMode}
+            onChange={(e) => setCertDispatchMode(e.target.value as CertificateDispatchMode)}
+          >
+            <option value="MANUAL">Manual — send from the participants list</option>
+            <option value="AUTO">Automatic — after the event ends</option>
+          </select>
+        </label>
+        {certDispatchMode === 'AUTO' && (
+          <TextField
+            label="Delay after the last day (hours)"
+            type="number"
+            min={0}
+            value={certAutoDelayHours}
+            onChange={(e) => setCertAutoDelayHours(e.target.value)}
+          />
+        )}
+        <div className="flex items-center gap-3">
+          <Button type="submit" fullWidth={false} disabled={certSaving}>
+            {certSaving ? 'Saving…' : 'Save certificate settings'}
+          </Button>
+          {certSaved && (
+            <span className="text-sm text-green-600 dark:text-green-400">Saved ✓</span>
+          )}
+        </div>
+      </form>
     </div>
   );
 }

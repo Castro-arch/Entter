@@ -34,8 +34,9 @@ src/
 │   │   └── events/
 │   │       ├── new/page.tsx       # multi-step event creation wizard
 │   │       └── [id]/
-│   │           ├── page.tsx       # event detail/edit + credential editor
-│   │           └── check-in/page.tsx  # QR scanner / manual roll-call + live summary
+│   │           ├── page.tsx               # event detail/edit + credential + certificate settings
+│   │           ├── check-in/page.tsx       # QR scanner / manual roll-call + live summary
+│   │           └── participants/page.tsx   # attendee list + certificate dispatch
 │   ├── layout.tsx                 # wraps the app in <AuthProvider>
 │   └── page.tsx                   # landing
 ├── components/
@@ -45,7 +46,7 @@ src/
 │       ├── qr-scanner.tsx         # BarcodeDetector camera scanner (ssr:false)
 │       └── attendance-summary.tsx # live total/checked-in/missing cards
 └── lib/
-    ├── api.ts                     # typed API client (authApi, eventsApi, attendanceApi) + ApiError
+    ├── api.ts                     # typed API client (authApi, eventsApi, attendanceApi, certificatesApi) + ApiError
     ├── auth/auth-context.tsx      # AuthProvider + useAuth() (session state)
     ├── socket.ts                  # socket.io-client wrapper for the attendance gateway
     ├── offline-queue.ts           # IndexedDB queue for check-in scans made offline

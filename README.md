@@ -102,7 +102,7 @@ entter/
 - [x] Credential positioning editor (drag-to-place, percentage-based)
 - [x] Checkout & payment webhook integration (Asaas)
 - [x] Check-in module (QR + manual) with realtime dashboard
-- [ ] Certificate dispatch module
+- [x] Certificate dispatch module
 - [x] Public event landing pages
 
 ## Getting started

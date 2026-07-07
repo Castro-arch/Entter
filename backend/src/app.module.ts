@@ -4,10 +4,12 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AttendanceModule } from './attendance/attendance.module';
 import { AuthModule } from './auth/auth.module';
+import { CertificatesModule } from './certificates/certificates.module';
 import { CheckoutModule } from './checkout/checkout.module';
 import { EventsModule } from './events/events.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PublicModule } from './public/public.module';
+import { QueueModule } from './queue/queue.module';
 import { RedisModule } from './redis/redis.module';
 
 @Module({
@@ -15,11 +17,13 @@ import { RedisModule } from './redis/redis.module';
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
     RedisModule,
+    QueueModule,
     AuthModule,
     EventsModule,
     PublicModule,
     CheckoutModule,
     AttendanceModule,
+    CertificatesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -58,6 +58,8 @@ export interface NamePosition {
   align?: TextAlign;
 }
 
+export type CertificateDispatchMode = 'MANUAL' | 'AUTO';
+
 export interface EventEntity {
   id: string;
   name: string;
@@ -67,6 +69,10 @@ export interface EventEntity {
   status: EventStatus;
   credentialArtworkUrl: string | null;
   credentialNamePosition: NamePosition | null;
+  certificateTemplateUrl: string | null;
+  certificateNamePosition: NamePosition | null;
+  certificateDispatchMode: CertificateDispatchMode;
+  certificateAutoDelayHours: number | null;
   createdAt: string;
   eventDays: EventDay[];
   ticketTypes: TicketType[];
@@ -83,6 +89,13 @@ export interface UpdateEventInput {
 export interface UpdateCredentialInput {
   artworkUrl?: string;
   namePosition?: NamePosition;
+}
+
+export interface UpdateCertificateInput {
+  templateUrl?: string;
+  namePosition?: NamePosition;
+  dispatchMode?: CertificateDispatchMode;
+  autoDelayHours?: number;
 }
 
 export interface CreateEventInput {
@@ -214,6 +227,36 @@ export const eventsApi = {
     request<EventEntity>(`/events/${id}/credential`, {
       method: 'PATCH',
       body: JSON.stringify(input),
+    }),
+  updateCertificate: (id: string, input: UpdateCertificateInput) =>
+    request<EventEntity>(`/events/${id}/certificate`, {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    }),
+};
+
+export interface Participant {
+  id: string;
+  name: string;
+  willNotAttend: boolean;
+  credentialSentAt: string | null;
+  certificateSentAt: string | null;
+  order: { buyerEmail: string };
+}
+
+export const participantsApi = {
+  list: (eventId: string) => request<Participant[]>(`/events/${eventId}/participants`),
+};
+
+export const certificatesApi = {
+  sendOne: (eventId: string, participantId: string) =>
+    request<{ queued: boolean }>(
+      `/events/${eventId}/participants/${participantId}/certificate`,
+      { method: 'POST' },
+    ),
+  sendAll: (eventId: string) =>
+    request<{ queued: number }>(`/events/${eventId}/certificates/send-all`, {
+      method: 'POST',
     }),
 };
 
