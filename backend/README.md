@@ -47,6 +47,9 @@ organizer can never read or modify another tenant's events.
 - `GET /events/:id` — returns a single event; `404` if it isn't the tenant's.
 - `PATCH /events/:id` — updates the event's own fields (name, description,
   location, cover image, `status`). Days and ticket types are managed separately.
+- `PATCH /events/:id/credential` — sets the credential artwork URL and the
+  attendee-name placement (`xPct`/`yPct`/`fontPct`/`color`/`align`), stored as
+  percentages so the layout is resolution-independent.
 
 ## Tests
 
