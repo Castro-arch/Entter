@@ -218,10 +218,10 @@ POST   /events/:id/participants/:participantId/certificate  -- dispara 1 certifi
 POST   /events/:id/certificates/send-all                     -- dispara em lote
 ```
 
-Todas as rotas de `attendance` e `certificates` acima foram aninhadas sob
-`/events/:id/` (em vez do formato plano do rascunho) para reaproveitar a mesma
-checagem de posse por tenant usada em todo o resto da API — necessário porque
-este doc é anterior ao modelo multi-tenant (`tenants`/`users`) implementado.
+Todas as rotas de `attendance` foram aninhadas sob `/events/:id/` (em vez do
+`/attendance/*` plano do rascunho acima) para reaproveitar a mesma checagem de
+posse por tenant usada em todo o resto da API — necessário porque este doc é
+anterior ao modelo multi-tenant (`tenants`/`users`) implementado.
 
 ## 6. Segurança
 

@@ -326,32 +326,3 @@ export const attendanceApi = {
       { method: 'PATCH', body: JSON.stringify({ willNotAttend }) },
     ),
 };
-
-export interface RevenueDay {
-  date: string;
-  amount: number;
-}
-
-export interface ActivityEntry {
-  type: 'order' | 'certificate' | 'checkin';
-  label: string;
-  timestamp: string;
-}
-
-export interface AttendanceRate {
-  eventId: string;
-  eventName: string;
-  total: number;
-  present: number;
-  rate: number;
-}
-
-export interface DashboardSummary {
-  revenue: { total: number; last14Days: RevenueDay[] };
-  recentActivity: ActivityEntry[];
-  attendanceRates: AttendanceRate[];
-}
-
-export const dashboardApi = {
-  summary: () => request<DashboardSummary>('/dashboard/summary'),
-};

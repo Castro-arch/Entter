@@ -78,17 +78,33 @@ export default function EventDetailPage() {
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-8">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold tracking-tight">{event.name}</h1>
-        {event.status === 'PUBLISHED' && (
-          <Link
-            href={`/events/${event.id}`}
-            target="_blank"
-            className="shrink-0 text-sm font-medium underline underline-offset-4"
-          >
-            View public page ↗
-          </Link>
-        )}
+      <div className="flex flex-col gap-1">
+        <Link
+          href="/dashboard"
+          className="text-sm text-black/50 underline underline-offset-4 dark:text-white/50"
+        >
+          ← Back to events
+        </Link>
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="text-2xl font-semibold tracking-tight">{event.name}</h1>
+          <div className="flex shrink-0 items-center gap-4">
+            <Link
+              href={`/dashboard/events/${event.id}/check-in`}
+              className="text-sm font-medium underline underline-offset-4"
+            >
+              Check-in
+            </Link>
+            {event.status === 'PUBLISHED' && (
+              <Link
+                href={`/events/${event.id}`}
+                target="_blank"
+                className="text-sm font-medium underline underline-offset-4"
+              >
+                View public page ↗
+              </Link>
+            )}
+          </div>
+        </div>
       </div>
 
       <form onSubmit={handleSave} className="flex flex-col gap-4">
