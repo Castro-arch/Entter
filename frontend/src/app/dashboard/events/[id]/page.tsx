@@ -144,10 +144,10 @@ export default function EventDetailPage() {
           <h1 className="text-2xl font-semibold tracking-tight">{event.name}</h1>
           <div className="flex shrink-0 items-center gap-4">
             <Link
-              href={`/dashboard/events/${event.id}/participants`}
+              href={`/dashboard/events/${event.id}/check-in`}
               className="text-sm font-medium underline underline-offset-4"
             >
-              Participants
+              Check-in
             </Link>
             {event.status === 'PUBLISHED' && (
               <Link

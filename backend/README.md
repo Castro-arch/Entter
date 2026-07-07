@@ -7,8 +7,8 @@ NestJS API for the Entter event credentialing & check-in platform. See the [root
 - **Framework:** NestJS + TypeScript
 - **Database:** PostgreSQL via [Prisma ORM](https://www.prisma.io) (v7, driver adapters — see `src/prisma/prisma.service.ts`)
 - **Auth:** JWT stored in an httpOnly cookie, `bcrypt` password hashing
-- **Certificates:** `pdf-lib` compositing + `nodemailer` delivery, rendered and
-  sent asynchronously on a `BullMQ` queue (Redis)
+- **Realtime:** Socket.IO gateway for the check-in dashboard (`src/attendance/attendance.gateway.ts`)
+- **Cache / locks:** Redis (`ioredis`) — check-in dedup lock and cached attendance counters
 
 ## Setup
 
@@ -84,35 +84,43 @@ With no `ASAAS_API_KEY`, checkout runs in **dev mode**: no real charge is
 created and the buyer is sent to a local pending page, so the whole flow —
 including the webhook — can be exercised without Asaas credentials.
 
-## Participants
+Provisioning also creates a `PENDING` `Attendance` row for every day of the
+event, which is what check-in flips to `PRESENT` — see below.
 
-- `GET /events/:id/participants` — the tenant's attendee list for an event,
-  with per-attendee credential/certificate send timestamps.
+## Check-in
 
-## Certificates
+All routes require authentication and are scoped to the caller's tenant, same
+as `/events`.
 
-- `POST /events/:eventId/participants/:participantId/certificate` — queues
-  one participant's certificate for render + email.
-- `POST /events/:eventId/certificates/send-all` — queues every eligible
-  participant (no certificate sent yet, not marked `willNotAttend`) for the
-  event.
+- `POST /events/:eventId/attendance/check-in` — checks a participant in for
+  one event day. `{ method: 'QR', qrToken }` or `{ method: 'MANUAL',
+  participantId }`. A short-lived Redis lock (`SET ... NX EX 5`) rejects
+  near-simultaneous duplicate scans before they reach Postgres; the actual
+  state change is an atomic `UPDATE ... WHERE status = 'PENDING'`, so a
+  replayed request is a no-op (`already_checked_in`), never a duplicate.
+  Broadcasts the day's updated counters over the WebSocket gateway.
+- `POST /events/:eventId/attendance/batch-sync` — the same operation over a
+  list of queued scans (`{ checkIns: [...] }`), for the offline client queue
+  to replay once connectivity returns. Each item is independent — one bad
+  item doesn't fail the batch.
+- `GET /events/:eventId/attendance/summary` — total/checked-in/missing per
+  event day. Backed by Redis counters that are lazily warmed from Postgres
+  (`COUNT`) on first read, then `INCR`'d on each confirmed check-in.
+- `GET /events/:eventId/attendance/search?eventDayId=&q=` — name search for
+  the manual roll-call UI and the QR fallback.
+- `PATCH /events/:eventId/attendance/participants/:id/will-not-attend` —
+  marks an attendee as not coming, so they don't show up as "missing".
 
-Both endpoints only enqueue a `BullMQ` job and return immediately — the
-actual PDF render (`pdf-lib`, compositing the name onto
-`certificateTemplateUrl` at `certificateNamePosition`, the same `%`-based
-placement as the credential editor) and email happen in
-`certificates.worker.ts`, off the request thread.
+**WebSocket** (`/socket.io`, same origin as the API): the dashboard connects
+with the `access_token` cookie, emits `join` with `{ eventId }` (verified
+against the caller's tenant), and receives `attendance:update` events with
+`{ eventDayId, total, present, missing }` as check-ins land.
 
-**Auto-dispatch:** when `certificateDispatchMode` is `AUTO`, a repeatable
-BullMQ job sweeps every 15 minutes for events whose last day +
-`certificateAutoDelayHours` has passed and haven't been dispatched yet
-(`Event.certificatesDispatchedAt`), and queues them the same way. This trades
-the doc's per-event delayed job for a small polling sweep — simpler, and nothing
-needs to be rescheduled or cancelled when an organizer edits the event later.
-
-With no `SMTP_HOST`, certificate email sends run in **dev mode**: the email is
-logged instead of sent, so the render/queue/send pipeline can be exercised
-without real SMTP credentials — same pattern as `ASAAS_API_KEY`.
+**QR payload note:** the client never validates the QR signature — `qr-token.ts`
+signs it with a symmetric secret (`QR_SECRET`) that must stay server-side.
+The scanner UI decodes the *unsigned* body only to show an optimistic "checking
+in…" state; the server performs the real signature check in
+`AttendanceService.checkIn`.
 
 ## Tests
 

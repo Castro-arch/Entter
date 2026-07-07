@@ -9,6 +9,8 @@ platform. See the [root README](../README.md) for product context.
 - **Styling:** Tailwind CSS v4
 - **Auth:** talks to the NestJS API as a client-side SPA, authenticating via the
   httpOnly `access_token` cookie (`credentials: 'include'` on every request)
+- **Check-in:** native `BarcodeDetector` QR scanning, `socket.io-client` for
+  the live attendance dashboard, an IndexedDB-backed offline queue for scans
 
 ## Setup
 
@@ -32,16 +34,23 @@ src/
 │   │   └── events/
 │   │       ├── new/page.tsx       # multi-step event creation wizard
 │   │       └── [id]/
-│   │           ├── page.tsx           # event detail/edit + credential editor
-│   │           └── participants/page.tsx  # attendee list + certificate dispatch
+│   │           ├── page.tsx       # event detail/edit + credential editor
+│   │           └── check-in/page.tsx  # QR scanner / manual roll-call + live summary
 │   ├── layout.tsx                 # wraps the app in <AuthProvider>
 │   └── page.tsx                   # landing
 ├── components/
 │   ├── ui.tsx                     # Button, TextField, TextArea, Alert primitives
-│   └── credential-editor.tsx      # react-konva drag-to-position editor (ssr:false)
+│   ├── credential-editor.tsx      # react-konva drag-to-position editor (ssr:false)
+│   └── checkin/
+│       ├── qr-scanner.tsx         # BarcodeDetector camera scanner (ssr:false)
+│       └── attendance-summary.tsx # live total/checked-in/missing cards
 └── lib/
-    ├── api.ts                     # typed API client (authApi, eventsApi, certificatesApi) + ApiError
-    └── auth/auth-context.tsx      # AuthProvider + useAuth() (session state)
+    ├── api.ts                     # typed API client (authApi, eventsApi, attendanceApi) + ApiError
+    ├── auth/auth-context.tsx      # AuthProvider + useAuth() (session state)
+    ├── socket.ts                  # socket.io-client wrapper for the attendance gateway
+    ├── offline-queue.ts           # IndexedDB queue for check-in scans made offline
+    ├── use-offline-checkin.ts     # queues + syncs scans via batch-sync
+    └── qr.ts                      # decodes the unsigned QR payload for optimistic UI
 ```
 
 ## Auth model

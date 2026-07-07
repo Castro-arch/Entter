@@ -142,6 +142,22 @@ export class CheckoutService {
         where: { id: order.ticketTypeId },
         data: { quantityAvailable: { decrement: 1 } },
       });
+
+      // Check-in does an atomic `UPDATE ... WHERE status = 'PENDING'`, which
+      // requires the row to already exist — created here, once, rather than
+      // lazily at check-in time, to keep that update a pure state transition.
+      const eventDays = await tx.eventDay.findMany({
+        where: { eventId: order.eventId },
+        select: { id: true },
+      });
+      if (eventDays.length > 0) {
+        await tx.attendance.createMany({
+          data: eventDays.map((day) => ({
+            participantId: participant.id,
+            eventDayId: day.id,
+          })),
+        });
+      }
     });
 
     this.logger.log(`Provisioned attendee for order ${order.id}`);

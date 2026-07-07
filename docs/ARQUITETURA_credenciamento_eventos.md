@@ -131,11 +131,22 @@ Regra: só permite publicar com etapas 1, 2 e 3 completas. Certificado é opcion
    - Usar `BarcodeDetector` nativa quando disponível; fallback `zxing-wasm` (mais rápido que `jsQR` puro).
    - Restringir a leitura a uma região central (crop) do frame de vídeo, não o frame inteiro.
    - Throttle de decodificação a ~150–200ms por tentativa (não a cada frame).
+   - **Implementado sem o fallback `zxing-wasm`**: navegadores sem `BarcodeDetector`
+     (ex: Safari) caem para o modo de busca manual por nome, que já precisa
+     existir de qualquer forma (é o modo principal em eventos de 1 dia). Evita
+     o bundling de WASM no Next.js por uma cobertura que a busca manual já
+     resolve na prática.
 
 2. **Validação local antes do round-trip**
    - `qr_token` é um JWT/HMAC assinado contendo `participant_id + event_id`.
    - Client valida a assinatura localmente e já exibe o nome do participante na tela instantaneamente, sem esperar resposta do servidor.
    - Em paralelo, envia o check-in para o backend para registro oficial.
+   - **Desvio de implementação**: a assinatura HMAC usa um secret simétrico
+     (`QR_SECRET`) — enviá-lo ao browser permitiria que qualquer pessoa lendo o
+     bundle JS forjasse tokens válidos. O client decodifica só o corpo *não
+     assinado* do token (`participant_id`) para exibir feedback otimista
+     ("checking in…"); a verificação de assinatura real acontece exclusivamente
+     no servidor, em `AttendanceService.checkIn`.
 
 3. **Concorrência e duplicidade**
    - Constraint `UNIQUE (participant_id, event_day_id)` na tabela `attendance`.
@@ -198,18 +209,19 @@ POST   /webhooks/asaas                  -- confirmação de pagamento
 GET    /events/:id/participants
 POST   /participants/:id/resend-credential
 
-POST   /attendance/check-in             -- check-in único (QR ou manual)
-POST   /attendance/batch-sync           -- sincronização em lote (offline-first)
-GET    /events/:id/attendance/summary   -- cards: total/chegaram/faltam por dia
-GET    /events/:id/attendance/report    -- relatório por dia
+POST   /events/:id/attendance/check-in     -- check-in único (QR ou manual)
+POST   /events/:id/attendance/batch-sync   -- sincronização em lote (offline-first)
+GET    /events/:id/attendance/summary      -- cards: total/chegaram/faltam por dia
+GET    /events/:id/attendance/search       -- busca por nome (Lista + fallback do QR)
 
 POST   /events/:id/participants/:participantId/certificate  -- dispara 1 certificado
 POST   /events/:id/certificates/send-all                     -- dispara em lote
 ```
 
-`send-certificate` (e as rotas de `attendance` acima) foram aninhadas sob
-`/events/:id/` em vez do formato plano do rascunho, pela mesma razão: reusar a
-checagem de posse por tenant usada no resto da API.
+Todas as rotas de `attendance` foram aninhadas sob `/events/:id/` (em vez do
+`/attendance/*` plano do rascunho acima) para reaproveitar a mesma checagem de
+posse por tenant usada em todo o resto da API — necessário porque este doc é
+anterior ao modelo multi-tenant (`tenants`/`users`) implementado.
 
 ## 6. Segurança
 
