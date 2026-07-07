@@ -22,6 +22,17 @@ const emptyTicket: TicketDraft = {
   saleEndsAt: '',
 };
 
+/** Mirrors the backend's `@IsUrl()` check closely enough to catch typos
+ * before the final submit, instead of a confusing error on step 4. */
+function isValidHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return (url.protocol === 'http:' || url.protocol === 'https:') && url.hostname.includes('.');
+  } catch {
+    return false;
+  }
+}
+
 export default function NewEventPage() {
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -42,6 +53,9 @@ export default function NewEventPage() {
   function validateStep(): string | null {
     if (step === 0 && name.trim().length < 2) {
       return 'Give your event a name (at least 2 characters).';
+    }
+    if (step === 0 && coverImageUrl.trim() && !isValidHttpUrl(coverImageUrl.trim())) {
+      return 'Cover image URL must be a valid http(s) link (e.g. https://example.com/image.jpg), or left blank.';
     }
     if (step === 1 && filledDays.length === 0) {
       return 'Add at least one date for the event.';
@@ -94,8 +108,8 @@ export default function NewEventPage() {
         : undefined,
     };
     try {
-      await eventsApi.create(payload);
-      router.replace('/dashboard');
+      const created = await eventsApi.create(payload);
+      router.replace(`/dashboard/events/${created.id}`);
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -110,7 +124,7 @@ export default function NewEventPage() {
     <div className="mx-auto flex max-w-xl flex-col gap-6">
       <div className="flex flex-col gap-1">
         <Link
-          href="/dashboard"
+          href="/dashboard/events"
           className="text-sm text-black/50 underline underline-offset-4 dark:text-white/50"
         >
           ← Back to events
@@ -284,6 +298,7 @@ export default function NewEventPage() {
         <section className="flex flex-col gap-3 rounded-xl border border-black/10 p-4 text-sm dark:border-white/10">
           <Review label="Name" value={name} />
           {location.trim() && <Review label="Location" value={location} />}
+          {coverImageUrl.trim() && <Review label="Cover image" value={coverImageUrl} />}
           <Review
             label="Dates"
             value={`${filledDays.length} day${filledDays.length === 1 ? '' : 's'}`}

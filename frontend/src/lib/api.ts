@@ -242,6 +242,8 @@ export interface Participant {
   credentialSentAt: string | null;
   certificateSentAt: string | null;
   order: { buyerEmail: string };
+  /** One row per event day. */
+  attendance: { eventDayId: string; status: AttendanceRowStatus; checkedInAt: string | null }[];
 }
 
 export const participantsApi = {

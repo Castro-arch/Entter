@@ -6,6 +6,7 @@ import { AttendanceModule } from './attendance/attendance.module';
 import { AuthModule } from './auth/auth.module';
 import { CertificatesModule } from './certificates/certificates.module';
 import { CheckoutModule } from './checkout/checkout.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import { EventsModule } from './events/events.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PublicModule } from './public/public.module';

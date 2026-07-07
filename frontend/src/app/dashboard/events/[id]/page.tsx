@@ -1,6 +1,5 @@
 'use client';
 
-import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useState, type FormEvent } from 'react';
@@ -8,16 +7,9 @@ import { Alert, Button, TextArea, TextField } from '@/components/ui';
 import {
   ApiError,
   eventsApi,
-  type CertificateDispatchMode,
   type EventEntity,
   type EventStatus,
 } from '@/lib/api';
-
-// Browser-only (canvas); never render it on the server.
-const CredentialEditor = dynamic(
-  () => import('@/components/credential-editor'),
-  { ssr: false },
-);
 
 const STATUSES: EventStatus[] = ['DRAFT', 'PUBLISHED', 'FINISHED'];
 
@@ -43,13 +35,6 @@ export default function EventDetailPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const [certTemplateUrl, setCertTemplateUrl] = useState('');
-  const [certDispatchMode, setCertDispatchMode] = useState<CertificateDispatchMode>('MANUAL');
-  const [certAutoDelayHours, setCertAutoDelayHours] = useState('24');
-  const [certSaveError, setCertSaveError] = useState<string | null>(null);
-  const [certSaving, setCertSaving] = useState(false);
-  const [certSaved, setCertSaved] = useState(false);
-
   useEffect(() => {
     eventsApi
       .get(eventId)
@@ -59,9 +44,6 @@ export default function EventDetailPage() {
         setDescription(data.description ?? '');
         setLocation(data.location ?? '');
         setStatus(data.status);
-        setCertTemplateUrl(data.certificateTemplateUrl ?? '');
-        setCertDispatchMode(data.certificateDispatchMode);
-        setCertAutoDelayHours(String(data.certificateAutoDelayHours ?? 24));
       })
       .catch((err) =>
         setLoadError(err instanceof ApiError ? err.message : 'Failed to load event'),
@@ -89,46 +71,9 @@ export default function EventDetailPage() {
     }
   }
 
-  async function handleSaveCertificate(formEvent: FormEvent<HTMLFormElement>) {
-    formEvent.preventDefault();
-    setCertSaveError(null);
-    setCertSaving(true);
-    setCertSaved(false);
-    try {
-      const updated = await eventsApi.updateCertificate(eventId, {
-        templateUrl: certTemplateUrl.trim() || undefined,
-        dispatchMode: certDispatchMode,
-        autoDelayHours: Number(certAutoDelayHours) || 0,
-      });
-      setEvent(updated);
-      setCertSaved(true);
-    } catch (err) {
-      setCertSaveError(
-        err instanceof ApiError ? err.message : 'Failed to save certificate settings',
-      );
-    } finally {
-      setCertSaving(false);
-    }
-  }
-
-  if (loadError) {
-    return (
-      <div className="mx-auto max-w-2xl">
-        <Alert>{loadError}</Alert>
-        <Link
-          href="/dashboard"
-          className="mt-4 inline-block text-sm underline underline-offset-4"
-        >
-          ← Back to events
-        </Link>
-      </div>
-    );
-  }
-
+  if (loadError) return <Alert>{loadError}</Alert>;
   if (!event) {
-    return (
-      <p className="text-sm text-black/60 dark:text-white/60">Loading event…</p>
-    );
+    return <p className="text-sm text-black/60 dark:text-white/60">Loading event…</p>;
   }
 
   return (
@@ -234,68 +179,6 @@ export default function EventDetailPage() {
           </div>
         </div>
       </section>
-
-      <section className="flex flex-col gap-3">
-        <div className="flex flex-col gap-1">
-          <h2 className="text-lg font-medium">Credential</h2>
-          <p className="text-sm text-black/60 dark:text-white/60">
-            Drag the name to where it should print on each attendee&apos;s
-            credential. Position is saved as percentages, so it stays correct at
-            any output size.
-          </p>
-        </div>
-        <CredentialEditor
-          eventId={event.id}
-          initialArtworkUrl={event.credentialArtworkUrl}
-          initialPosition={event.credentialNamePosition}
-        />
-      </section>
-
-      <form onSubmit={handleSaveCertificate} className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <h2 className="text-lg font-medium">Certificate</h2>
-          <p className="text-sm text-black/60 dark:text-white/60">
-            PDF template attendees receive after the event. The name is printed
-            centered on the page — use the participants list to send manually,
-            or switch to automatic dispatch below.
-          </p>
-        </div>
-        {certSaveError && <Alert>{certSaveError}</Alert>}
-        <TextField
-          label="Template URL (PDF)"
-          placeholder="https://…"
-          value={certTemplateUrl}
-          onChange={(e) => setCertTemplateUrl(e.target.value)}
-        />
-        <label className="flex flex-col gap-1.5">
-          <span className="text-sm font-medium">Dispatch</span>
-          <select
-            className="h-11 rounded-lg border border-black/15 bg-transparent px-3 text-sm outline-none focus:border-foreground dark:border-white/20"
-            value={certDispatchMode}
-            onChange={(e) => setCertDispatchMode(e.target.value as CertificateDispatchMode)}
-          >
-            <option value="MANUAL">Manual — send from the participants list</option>
-            <option value="AUTO">Automatic — after the event ends</option>
-          </select>
-        </label>
-        {certDispatchMode === 'AUTO' && (
-          <TextField
-            label="Delay after the last day (hours)"
-            type="number"
-            min={0}
-            value={certAutoDelayHours}
-            onChange={(e) => setCertAutoDelayHours(e.target.value)}
-          />
-        )}
-        <div className="flex items-center gap-3">
-          <Button type="submit" fullWidth={false} disabled={certSaving}>
-            {certSaving ? 'Saving…' : 'Save certificate settings'}
-          </Button>
-          {certSaved && (
-            <span className="text-sm text-green-600 dark:text-green-400">Saved ✓</span>
-          )}
-        </div>
-      </form>
     </div>
   );
 }
