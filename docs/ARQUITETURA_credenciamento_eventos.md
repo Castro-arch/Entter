@@ -168,6 +168,20 @@ Regra: só permite publicar com etapas 1, 2 e 3 completas. Certificado é opcion
 - Disparo automático: job BullMQ agendado para `event.end_date + certificate_auto_delay_hours`.
 - Envio por e-mail com anexo PDF (WhatsApp como canal adicional, se necessário).
 
+**Desvio de implementação (disparo automático)**: em vez de um job BullMQ
+*delayed* por evento (que precisaria ser reagendado ou cancelado sempre que o
+organizador editasse as datas do evento depois de criado), o disparo `AUTO` é
+feito por um job BullMQ *repetível* que varre a cada 15 minutos os eventos
+`AUTO` cujo último dia + `certificate_auto_delay_hours` já passou e ainda não
+foram disparados (`Event.certificates_dispatched_at`, campo não presente no
+schema original deste documento). Mais simples de manter correto e nada
+precisa ser cancelado/reagendado manualmente.
+
+**Envio de e-mail**: sem `SMTP_HOST` configurado, o envio roda em modo dev
+(loga o e-mail em vez de enviar de fato) — mesmo padrão usado para o Asaas em
+`checkout`, permitindo exercitar o fluxo completo (render do PDF + fila +
+"envio") sem credenciais reais de SMTP.
+
 ## 5. Endpoints principais (referência inicial)
 
 ```
@@ -189,9 +203,13 @@ POST   /attendance/batch-sync           -- sincronização em lote (offline-firs
 GET    /events/:id/attendance/summary   -- cards: total/chegaram/faltam por dia
 GET    /events/:id/attendance/report    -- relatório por dia
 
-POST   /participants/:id/send-certificate
-POST   /events/:id/certificates/send-all
+POST   /events/:id/participants/:participantId/certificate  -- dispara 1 certificado
+POST   /events/:id/certificates/send-all                     -- dispara em lote
 ```
+
+`send-certificate` (e as rotas de `attendance` acima) foram aninhadas sob
+`/events/:id/` em vez do formato plano do rascunho, pela mesma razão: reusar a
+checagem de posse por tenant usada no resto da API.
 
 ## 6. Segurança
 

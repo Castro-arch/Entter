@@ -3,19 +3,25 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { CertificatesModule } from './certificates/certificates.module';
 import { CheckoutModule } from './checkout/checkout.module';
 import { EventsModule } from './events/events.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PublicModule } from './public/public.module';
+import { QueueModule } from './queue/queue.module';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
+    RedisModule,
+    QueueModule,
     AuthModule,
     EventsModule,
     PublicModule,
     CheckoutModule,
+    CertificatesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateEventDto } from './dto/create-event.dto';
+import { UpdateCertificateDto } from './dto/update-certificate.dto';
 import { UpdateCredentialDto } from './dto/update-credential.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 
@@ -89,6 +90,46 @@ export class EventsService {
           : undefined,
       },
       include: eventInclude,
+    });
+  }
+
+  async updateCertificate(
+    tenantId: string,
+    id: string,
+    dto: UpdateCertificateDto,
+  ) {
+    await this.findOne(tenantId, id);
+    return this.prisma.event.update({
+      where: { id },
+      data: {
+        certificateTemplateUrl: dto.templateUrl,
+        certificateNamePosition: dto.namePosition
+          ? { ...dto.namePosition }
+          : undefined,
+        certificateDispatchMode: dto.dispatchMode,
+        certificateAutoDelayHours: dto.autoDelayHours,
+        // Editing the config after an AUTO sweep already ran means it should
+        // be eligible to run again under the new settings.
+        certificatesDispatchedAt:
+          dto.dispatchMode || dto.autoDelayHours !== undefined ? null : undefined,
+      },
+      include: eventInclude,
+    });
+  }
+
+  async listParticipants(tenantId: string, id: string) {
+    await this.findOne(tenantId, id);
+    return this.prisma.participant.findMany({
+      where: { eventId: id },
+      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        willNotAttend: true,
+        credentialSentAt: true,
+        certificateSentAt: true,
+        order: { select: { buyerEmail: true } },
+      },
     });
   }
 }
