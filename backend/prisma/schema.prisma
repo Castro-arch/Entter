@@ -98,6 +98,9 @@ model Event {
   certificateNamePosition   Json?                   @map("certificate_name_position")
   certificateDispatchMode   CertificateDispatchMode @default(MANUAL) @map("certificate_dispatch_mode")
   certificateAutoDelayHours Int?                    @map("certificate_auto_delay_hours")
+  /// Set once the AUTO-dispatch sweep has enqueued this event's certificates,
+  /// so a later sweep pass doesn't re-enqueue them. Not in the original doc.
+  certificatesDispatchedAt  DateTime?               @map("certificates_dispatched_at")
   createdAt                 DateTime                @default(now()) @map("created_at")
 
   tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)

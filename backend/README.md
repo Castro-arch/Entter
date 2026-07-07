@@ -53,6 +53,11 @@ organizer can never read or modify another tenant's events.
 - `PATCH /events/:id/credential` — sets the credential artwork URL and the
   attendee-name placement (`xPct`/`yPct`/`fontPct`/`color`/`align`), stored as
   percentages so the layout is resolution-independent.
+- `PATCH /events/:id/certificate` — sets the certificate template URL, the
+  same `%`-based name placement, `dispatchMode` (`MANUAL`/`AUTO`), and
+  `autoDelayHours`. Changing `dispatchMode` or `autoDelayHours` clears
+  `certificatesDispatchedAt`, so an edited event is eligible for the
+  auto-dispatch sweep again.
 
 ## Public
 
