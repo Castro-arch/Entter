@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateEventDto } from './dto/create-event.dto';
+import { UpdateCredentialDto } from './dto/update-credential.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 
 /** Days and ticket types are always loaded with an event; days stay ordered. */
@@ -68,6 +69,25 @@ export class EventsService {
     return this.prisma.event.update({
       where: { id },
       data: dto,
+      include: eventInclude,
+    });
+  }
+
+  async updateCredential(
+    tenantId: string,
+    id: string,
+    dto: UpdateCredentialDto,
+  ) {
+    await this.findOne(tenantId, id);
+    return this.prisma.event.update({
+      where: { id },
+      data: {
+        credentialArtworkUrl: dto.artworkUrl,
+        // `undefined` leaves the stored position untouched; a value replaces it.
+        credentialNamePosition: dto.namePosition
+          ? { ...dto.namePosition }
+          : undefined,
+      },
       include: eventInclude,
     });
   }

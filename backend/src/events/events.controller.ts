@@ -12,6 +12,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { JwtPayload } from '../auth/types/jwt-payload.type';
 import { CreateEventDto } from './dto/create-event.dto';
+import { UpdateCredentialDto } from './dto/update-credential.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { EventsService } from './events.service';
 
@@ -45,5 +46,14 @@ export class EventsController {
     @Body() dto: UpdateEventDto,
   ) {
     return this.eventsService.update(user.tenantId, id, dto);
+  }
+
+  @Patch(':id/credential')
+  updateCredential(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateCredentialDto,
+  ) {
+    return this.eventsService.updateCredential(user.tenantId, id, dto);
   }
 }

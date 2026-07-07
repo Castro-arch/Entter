@@ -29,10 +29,14 @@ src/
 │   ├── (auth)/                    # login & registration (centered auth layout)
 │   ├── dashboard/                 # protected shell, redirects unauthenticated visitors
 │   │   ├── page.tsx               # events list + "New event" CTA
-│   │   └── events/new/page.tsx    # multi-step event creation wizard
+│   │   └── events/
+│   │       ├── new/page.tsx       # multi-step event creation wizard
+│   │       └── [id]/page.tsx      # event detail/edit + credential editor
 │   ├── layout.tsx                 # wraps the app in <AuthProvider>
 │   └── page.tsx                   # landing
-├── components/ui.tsx              # Button, TextField, TextArea, Alert primitives
+├── components/
+│   ├── ui.tsx                     # Button, TextField, TextArea, Alert primitives
+│   └── credential-editor.tsx      # react-konva drag-to-position editor (ssr:false)
 └── lib/
     ├── api.ts                     # typed API client (authApi, eventsApi) + ApiError
     └── auth/auth-context.tsx      # AuthProvider + useAuth() (session state)
