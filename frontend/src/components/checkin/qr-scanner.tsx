@@ -88,7 +88,7 @@ export default function QrScanner({ onDetect, paused = false }: QrScannerProps) 
   }
 
   return (
-    <div className="relative mx-auto aspect-square w-full max-w-sm overflow-hidden rounded-xl border border-black/10 bg-black dark:border-white/10">
+    <div className="relative mx-auto aspect-square w-full max-w-sm overflow-hidden rounded-[14px] border border-white/10 bg-black">
       <video
         ref={videoRef}
         muted

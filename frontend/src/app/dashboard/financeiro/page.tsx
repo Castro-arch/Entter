@@ -1,17 +1,20 @@
+import { EmptyState, PageHeader } from '@/components/dash-ui';
+
 export default function FinanceiroPage() {
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Financeiro</h1>
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
+      <PageHeader
+        title="Financeiro"
+        subtitle="Receita, repasses e histórico de pedidos"
+      />
 
-      <div className="rounded-xl border border-dashed border-black/15 px-6 py-12 text-center dark:border-white/15">
-        <p className="text-sm font-medium">Coming soon</p>
-        <p className="mx-auto mt-2 max-w-md text-sm text-black/60 dark:text-white/60">
-          Every organizer will get their own Asaas sub-account, so ticket
-          revenue settles directly with them instead of pooling in one
-          platform account. Once that&apos;s wired up, this page will show
-          order history, payout status, and revenue by event and ticket type.
-        </p>
-      </div>
+      <EmptyState title="Em breve">
+        Cada organizador terá sua própria subconta Asaas, para que a receita
+        dos ingressos seja repassada diretamente, em vez de ficar acumulada em
+        uma conta única da plataforma. Quando isso estiver conectado, esta
+        página mostrará o histórico de pedidos, o status dos repasses e a
+        receita por evento e por tipo de ingresso.
+      </EmptyState>
     </div>
   );
 }

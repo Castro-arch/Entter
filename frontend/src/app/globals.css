@@ -41,11 +41,11 @@ body {
 }
 
 /**
- * Warm dark theme for the organizer dashboard shell (sidebar + overview
- * page), modeled on a reference design. Scoped to `.dash` rather than
- * overriding :root, since most existing dashboard sub-pages (events list,
- * check-in, settings, etc.) hardcode black/white opacity utilities that
- * assume a light background and weren't part of this pass.
+ * Warm dark theme for the organizer dashboard shell, modeled on the
+ * "Entter Dashboard v2" reference design. Scoped to `.dash` rather than
+ * overriding :root so the public/auth pages keep the default light/OS-dark
+ * palette. The dashboard sub-pages build on the primitives in
+ * `components/dash-ui.tsx`, which use the same fixed palette.
  */
 .dash {
   --background: #17120f;

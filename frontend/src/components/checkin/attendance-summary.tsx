@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { ProgressBar, Skeleton } from '@/components/dash-ui';
 import { attendanceApi, type DaySummary } from '@/lib/api';
 import { subscribeToAttendance } from '@/lib/socket';
 
@@ -33,26 +34,48 @@ export default function AttendanceSummary({ eventId, eventDayId }: AttendanceSum
   }, [eventId, eventDayId]);
 
   if (!summary) {
-    return <p className="text-sm text-black/50 dark:text-white/50">Loading…</p>;
+    return (
+      <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-3 gap-3">
+          <Skeleton className="h-[74px]" />
+          <Skeleton className="h-[74px]" />
+          <Skeleton className="h-[74px]" />
+        </div>
+        <Skeleton className="h-1.5 w-full rounded-full" />
+      </div>
+    );
   }
 
   const cards = [
-    { label: 'Total', value: summary.total },
-    { label: 'Checked in', value: summary.present },
-    { label: 'Missing', value: summary.missing },
+    { label: 'Total', value: summary.total, accent: 'text-[#F5F2EE]' },
+    { label: 'Presentes', value: summary.present, accent: 'text-[#9BC98E]' },
+    { label: 'Faltam', value: summary.missing, accent: 'text-[#F0561D]' },
   ];
+  const pct = summary.total > 0 ? Math.round((summary.present / summary.total) * 100) : 0;
 
   return (
-    <div className="grid grid-cols-3 gap-3">
-      {cards.map((card) => (
-        <div
-          key={card.label}
-          className="rounded-xl border border-black/10 px-4 py-3 text-center dark:border-white/10"
-        >
-          <div className="text-2xl font-semibold tabular-nums">{card.value}</div>
-          <div className="text-xs text-black/50 dark:text-white/50">{card.label}</div>
-        </div>
-      ))}
+    <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-3 gap-3">
+        {cards.map((card) => (
+          <div
+            key={card.label}
+            className="rounded-[14px] border border-white/10 px-4 py-3.5 text-center"
+          >
+            <div className={`text-2xl font-extrabold tabular-nums tracking-[-0.5px] ${card.accent}`}>
+              {card.value}
+            </div>
+            <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#8E8A84]">
+              {card.label}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-3">
+        <ProgressBar value={pct} className="flex-1" />
+        <span className="shrink-0 text-[12px] font-bold tabular-nums text-[#F5F2EE]">
+          {pct}%
+        </span>
+      </div>
     </div>
   );
 }

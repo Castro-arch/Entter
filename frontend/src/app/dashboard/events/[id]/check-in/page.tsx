@@ -1,10 +1,17 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Button, TextField } from '@/components/ui';
+import {
+  Alert,
+  BackLink,
+  Button,
+  PageHeader,
+  SegmentedControl,
+  Skeleton,
+  TextField,
+} from '@/components/dash-ui';
 import AttendanceSummary from '@/components/checkin/attendance-summary';
 import {
   ApiError,
@@ -22,17 +29,31 @@ const QrScanner = dynamic(() => import('@/components/checkin/qr-scanner'), {
   ssr: false,
 });
 
-const dateFormat = new Intl.DateTimeFormat('en', {
+const dateFormat = new Intl.DateTimeFormat('pt-BR', {
   weekday: 'short',
   day: 'numeric',
   month: 'short',
+});
+
+const timeFormat = new Intl.DateTimeFormat('pt-BR', {
+  hour: '2-digit',
+  minute: '2-digit',
 });
 
 interface FeedEntry {
   clientId: string;
   label: string;
   status: 'pending' | CheckInResult['status'];
+  /** Epoch ms of when the entry (last) changed, for the timestamp column. */
+  at: number;
 }
+
+const feedStatusStyles: Record<FeedEntry['status'], { label: string; className: string }> = {
+  pending: { label: 'sincronizando…', className: 'text-[#8E8A84]' },
+  error: { label: 'falhou', className: 'text-[#E8604A]' },
+  already_checked_in: { label: 'já entrou', className: 'text-[#E8B44A]' },
+  checked_in: { label: 'check-in feito', className: 'text-[#9BC98E]' },
+};
 
 export default function CheckInPage() {
   const params = useParams<{ id: string }>();
@@ -57,12 +78,15 @@ export default function CheckInPage() {
         setMode(data.eventDays.length >= 2 ? 'qr' : 'search');
       })
       .catch((err) =>
-        setLoadError(err instanceof ApiError ? err.message : 'Failed to load event'),
+        setLoadError(err instanceof ApiError ? err.message : 'Não foi possível carregar o evento'),
       );
   }, [eventId]);
 
-  const pushFeed = useCallback((entry: FeedEntry) => {
-    setFeed((prev) => [entry, ...prev.filter((e) => e.clientId !== entry.clientId)].slice(0, 10));
+  const pushFeed = useCallback((entry: Omit<FeedEntry, 'at'>) => {
+    setFeed((prev) => [
+      { ...entry, at: Date.now() },
+      ...prev.filter((e) => e.clientId !== entry.clientId),
+    ].slice(0, 10));
   }, []);
 
   const handleResult = useCallback(
@@ -72,7 +96,7 @@ export default function CheckInPage() {
         clientId: result.clientId,
         label:
           result.attendance?.participant.name ??
-          (result.status === 'error' ? (result.message ?? 'Failed') : 'Unknown attendee'),
+          (result.status === 'error' ? (result.message ?? 'Falhou') : 'Participante desconhecido'),
         status: result.status,
       });
     },
@@ -88,7 +112,7 @@ export default function CheckInPage() {
       try {
         setResults(await attendanceApi.search(eventId, selectedDayId, value));
       } catch (err) {
-        setSearchError(err instanceof ApiError ? err.message : 'Search failed');
+        setSearchError(err instanceof ApiError ? err.message : 'A busca falhou');
       }
     },
     [eventId, selectedDayId],
@@ -105,7 +129,7 @@ export default function CheckInPage() {
       const payload = decodeQrPayload(rawValue);
       if (!payload || payload.e !== eventId) return; // invalid or foreign QR
 
-      pushFeed({ clientId: payload.p, label: 'Checking in…', status: 'pending' });
+      pushFeed({ clientId: payload.p, label: 'Fazendo check-in…', status: 'pending' });
       void submitScan({ eventDayId: selectedDayId, method: 'QR', qrToken: rawValue });
     },
     [eventId, selectedDayId, submitScan, pushFeed],
@@ -127,30 +151,38 @@ export default function CheckInPage() {
 
   if (loadError) {
     return (
-      <div className="mx-auto max-w-2xl">
+      <div className="mx-auto w-full max-w-2xl">
         <Alert>{loadError}</Alert>
-        <Link href="/dashboard" className="mt-4 inline-block text-sm underline underline-offset-4">
-          ← Back to events
-        </Link>
+        <div className="mt-4">
+          <BackLink href="/dashboard/events">Voltar para eventos</BackLink>
+        </div>
       </div>
     );
   }
 
   if (!event || !selectedDayId) {
-    return <p className="text-sm text-black/60 dark:text-white/60">Loading…</p>;
+    return (
+      <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
+        <Skeleton className="h-5 w-40" />
+        <Skeleton className="h-9 w-56" />
+        <div className="grid grid-cols-3 gap-3">
+          <Skeleton className="h-[74px]" />
+          <Skeleton className="h-[74px]" />
+          <Skeleton className="h-[74px]" />
+        </div>
+        <Skeleton className="h-12 w-full" />
+      </div>
+    );
   }
 
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <Link
-          href={`/dashboard/events/${event.id}`}
-          className="text-sm text-black/50 underline underline-offset-4 dark:text-white/50"
-        >
-          ← Back to event
-        </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">Check-in — {event.name}</h1>
-      </div>
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
+      <PageHeader
+        title="Check-in"
+        subtitle={event.name}
+        backHref={`/dashboard/events/${event.id}`}
+        backLabel="Voltar para o evento"
+      />
 
       {event.eventDays.length > 1 && (
         <div className="flex flex-wrap gap-2">
@@ -158,10 +190,10 @@ export default function CheckInPage() {
             <button
               key={day.id}
               onClick={() => setSelectedDayId(day.id)}
-              className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
+              className={`rounded-full px-3.5 py-1.5 text-[13px] font-bold transition-colors ${
                 day.id === selectedDayId
-                  ? 'bg-foreground text-background'
-                  : 'border border-black/15 dark:border-white/20'
+                  ? 'bg-[#F0561D] text-[#131215]'
+                  : 'border border-white/10 bg-[#1C1B1F] text-[#8E8A84] hover:text-[#F5F2EE]'
               }`}
             >
               {dateFormat.format(new Date(day.date))}
@@ -173,37 +205,31 @@ export default function CheckInPage() {
       <AttendanceSummary eventId={eventId} eventDayId={selectedDayId} />
 
       {pendingCount > 0 && (
-        <p className="text-xs text-amber-600 dark:text-amber-400">
-          {pendingCount} scan{pendingCount === 1 ? '' : 's'} waiting to sync…
-        </p>
+        <span className="inline-flex items-center gap-2 self-start rounded-full bg-[#26231F] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.04em] text-[#E8B44A]">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#E8B44A]" />
+          {pendingCount} scan{pendingCount === 1 ? '' : 's'} aguardando sincronização
+        </span>
       )}
 
       {event.eventDays.length >= 2 && qrCapable && (
-        <div className="flex gap-2 text-sm font-medium">
-          <button
-            onClick={() => setMode('qr')}
-            className={`rounded-lg px-3 py-1.5 ${mode === 'qr' ? 'bg-foreground text-background' : 'border border-black/15 dark:border-white/20'}`}
-          >
-            Scan QR
-          </button>
-          <button
-            onClick={() => setMode('search')}
-            className={`rounded-lg px-3 py-1.5 ${mode === 'search' ? 'bg-foreground text-background' : 'border border-black/15 dark:border-white/20'}`}
-          >
-            Search
-          </button>
-        </div>
+        <SegmentedControl<'qr' | 'search'>
+          value={mode}
+          onChange={setMode}
+          options={[
+            { value: 'qr', label: 'Escanear QR' },
+            { value: 'search', label: 'Buscar' },
+          ]}
+        />
       )}
 
-      {mode === 'qr' && qrCapable && (
-        <QrScanner onDetect={handleQrDetect} />
-      )}
+      {mode === 'qr' && qrCapable && <QrScanner onDetect={handleQrDetect} />}
 
       {mode === 'search' && (
         <div className="flex flex-col gap-3">
           <TextField
-            label="Search attendee"
-            placeholder="Type a name…"
+            label="Buscar participante"
+            placeholder="Digite um nome…"
+            autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -212,51 +238,66 @@ export default function CheckInPage() {
             {results?.map((r) => (
               <li
                 key={r.id}
-                className="flex items-center justify-between rounded-lg border border-black/10 px-3 py-2 dark:border-white/10"
+                className={`flex items-center justify-between gap-3 rounded-[12px] border border-white/10 bg-[#1C1B1F] px-4 py-3 ${
+                  r.willNotAttend ? 'opacity-60' : ''
+                }`}
               >
-                <span>{r.name}</span>
+                <div className="flex min-w-0 flex-col">
+                  <span className="truncate font-semibold text-[#F5F2EE]">{r.name}</span>
+                  {r.willNotAttend && (
+                    <span className="text-[11px] font-bold uppercase tracking-[0.04em] text-[#E8B44A]">
+                      Não comparecerá
+                    </span>
+                  )}
+                </div>
                 {r.attendance?.status === 'PRESENT' ? (
-                  <span className="text-sm text-green-600 dark:text-green-400">✓ Checked in</span>
+                  <span className="flex shrink-0 items-center gap-1.5 text-[13px] font-semibold text-[#9BC98E]">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 12l5 5L20 7" />
+                    </svg>
+                    Presente
+                    {r.attendance.checkedInAt && (
+                      <span className="font-normal text-[#8E8A84]">
+                        · {timeFormat.format(new Date(r.attendance.checkedInAt))}
+                      </span>
+                    )}
+                  </span>
                 ) : (
-                  <Button fullWidth={false} onClick={() => markPresent(r.id)}>
-                    Mark present
+                  <Button className="h-9 shrink-0 px-3.5 text-xs" onClick={() => markPresent(r.id)}>
+                    Marcar presença
                   </Button>
                 )}
               </li>
             ))}
             {results?.length === 0 && (
-              <li className="text-sm text-black/50 dark:text-white/50">No matches.</li>
+              <li className="text-sm text-[#8E8A84]">Nenhum resultado.</li>
             )}
           </ul>
         </div>
       )}
 
       {feed.length > 0 && (
-        <div className="flex flex-col gap-1.5">
-          <h2 className="text-sm font-medium text-black/60 dark:text-white/60">Recent scans</h2>
-          <ul className="flex flex-col gap-1 text-sm">
-            {feed.map((entry) => (
-              <li key={entry.clientId} className="flex items-center justify-between">
-                <span>{entry.label}</span>
-                <span
-                  className={
-                    entry.status === 'error'
-                      ? 'text-red-600 dark:text-red-400'
-                      : entry.status === 'pending'
-                        ? 'text-black/40 dark:text-white/40'
-                        : 'text-green-600 dark:text-green-400'
-                  }
-                >
-                  {entry.status === 'pending'
-                    ? 'syncing…'
-                    : entry.status === 'error'
-                      ? 'failed'
-                      : entry.status === 'already_checked_in'
-                        ? 'already in'
-                        : 'checked in'}
-                </span>
-              </li>
-            ))}
+        <div className="flex flex-col gap-2">
+          <h2 className="text-xs font-bold uppercase tracking-[0.08em] text-[#8E8A84]">
+            Últimos scans
+          </h2>
+          <ul className="flex flex-col gap-1.5 text-sm">
+            {feed.map((entry) => {
+              const style = feedStatusStyles[entry.status];
+              return (
+                <li key={entry.clientId} className="flex items-center justify-between gap-3">
+                  <span className="truncate text-[#F5F2EE]">{entry.label}</span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    <span className={`text-[12.5px] font-semibold ${style.className}`}>
+                      {style.label}
+                    </span>
+                    <span className="text-[11.5px] tabular-nums text-[#8E8A84]">
+                      {timeFormat.format(entry.at)}
+                    </span>
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}

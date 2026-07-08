@@ -18,22 +18,23 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   if (status !== 'authenticated' || !user) {
     return (
-      <main className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-black/60 dark:text-white/60">Loading…</p>
+      <main className="flex flex-1 items-center justify-center bg-[#131215]">
+        <p className="text-sm text-[#8E8A84]">Carregando…</p>
       </main>
     );
   }
 
-  // Only the overview page has been redesigned around the warm dark theme;
-  // other dashboard pages keep their existing light/OS-dark styling.
+  // Every dashboard page shares the "Entter Dashboard v2" dark shell. The
+  // overview reproduces the reference design full-bleed and supplies its own
+  // padding; the sub-pages get the standard padded canvas.
   const isOverview = pathname === '/dashboard';
 
   return (
     <div className="flex flex-1 flex-col md:flex-row">
       <Sidebar />
       <main
-        className={`flex-1 overflow-y-auto px-4 py-6 md:px-8 md:py-8 ${
-          isOverview ? 'dash bg-background text-foreground' : ''
+        className={`flex flex-1 flex-col overflow-y-auto bg-[#131215] font-[family-name:var(--font-hanken)] text-[#F5F2EE] [color-scheme:dark] ${
+          isOverview ? '' : 'px-4 py-6 md:px-8 md:py-8'
         }`}
       >
         {children}

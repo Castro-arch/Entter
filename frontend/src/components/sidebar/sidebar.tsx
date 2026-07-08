@@ -47,6 +47,12 @@ const icons = {
       <path d="M8.5 15L7 22l5-3 5 3-1.5-7" />
     </svg>
   ),
+  financeiro: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v10M15 9.5c0-1.2-1.3-2-3-2s-3 .8-3 2 1.3 1.7 3 2 3 .8 3 2-1.3 2-3 2-3-.8-3-2" />
+    </svg>
+  ),
   notificacoes: (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
       <path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -64,6 +70,7 @@ const icons = {
 const GLOBAL_NAV: NavItem[] = [
   { label: 'Dashboard', href: '/dashboard', icon: icons.dashboard },
   { label: 'Eventos', href: '/dashboard/events', icon: icons.eventos },
+  { label: 'Financeiro', href: '/dashboard/financeiro', icon: icons.financeiro },
 ];
 
 const EVENT_NAV: { label: string; segment: string; icon: ReactNode }[] = [
@@ -77,6 +84,21 @@ const TAIL_NAV: NavItem[] = [
   { label: 'Configurações', href: '/dashboard/settings', icon: icons.configuracoes },
 ];
 
+function NavSection({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    // Proximity principle: items within a group sit close (gap-0.5 = 2px);
+    // the gap *before* the label (pt-5 = 20px) is markedly larger than the
+    // gap *after* it (pb-2 = 8px), so each label reads as attached to its
+    // own group rather than floating between two.
+    <div className="flex flex-col gap-0.5">
+      <div className="px-3.5 pb-2 pt-5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#5C584F] first:pt-0">
+        {label}
+      </div>
+      {children}
+    </div>
+  );
+}
+
 function isEventsActive(pathname: string): boolean {
   if (pathname === '/dashboard/events' || pathname.startsWith('/dashboard/events/new')) {
     return true;
@@ -86,9 +108,14 @@ function isEventsActive(pathname: string): boolean {
 }
 
 function NavRow({ active, href, icon, label }: { active: boolean; href: string; icon: ReactNode; label: string }) {
+  // py-3 brings the row to ~43px tall (12px pad × 2 + ~19px line height),
+  // just under the 44px tap-target guideline (WCAG 2.5.5 / Apple HIG) —
+  // this sidebar doubles as the mobile drawer, so rows are real tap targets,
+  // not just desktop hover rows. gap-2.5 keeps the icon-to-label gap on the
+  // 4px grid instead of the previous arbitrary 11px.
   const className = active
-    ? 'flex items-center gap-[11px] rounded-[10px] bg-[#26231F] px-3.5 py-2.5 font-semibold text-[#F5F2EE]'
-    : 'flex items-center gap-[11px] rounded-[10px] px-3.5 py-2.5 text-[#8E8A84] transition-colors hover:bg-[#1B1917] hover:text-[#F5F2EE]';
+    ? 'flex items-center gap-2.5 rounded-[10px] bg-[#26231F] px-3.5 py-3 font-semibold text-[#F5F2EE]'
+    : 'flex items-center gap-2.5 rounded-[10px] px-3.5 py-3 text-[#8E8A84] transition-colors hover:bg-[#1B1917] hover:text-[#F5F2EE]';
   return (
     <Link href={href} className={className}>
       {icon}
@@ -121,7 +148,7 @@ export default function Sidebar() {
   const currentEventId = useCurrentEventId(events);
 
   return (
-    <div className="dash">
+    <div className="dash font-[family-name:var(--font-hanken)]">
       <div className="flex items-center justify-between border-b border-white/10 bg-[#131215] px-4 py-3 md:hidden">
         <span className="text-[24px] font-extrabold tracking-[-0.5px] text-[#F0561D]">entter</span>
         <button
@@ -144,7 +171,7 @@ export default function Sidebar() {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-56 shrink-0 flex-col gap-1 bg-[#131215] py-5 pr-4 pl-5 transition-transform duration-200 md:static md:z-auto md:translate-x-0 md:border-r md:border-white/[.05] ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-[300px] shrink-0 flex-col gap-1 bg-[#131215] py-5 pr-4 pl-5 transition-transform duration-200 md:static md:z-auto md:translate-x-0 md:border-r md:border-white/[.05] ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -152,22 +179,30 @@ export default function Sidebar() {
           entter
         </div>
 
-        <nav className="flex flex-col gap-0.5 text-[13.5px]">
-          {GLOBAL_NAV.map((item) => {
-            const active =
-              item.href === '/dashboard' ? pathname === '/dashboard' : isEventsActive(pathname);
-            return <NavRow key={item.href} active={active} href={item.href} icon={item.icon} label={item.label} />;
-          })}
+        <nav className="flex flex-col text-[13.5px]">
+          <NavSection label="Geral">
+            {GLOBAL_NAV.map((item) => {
+              const active =
+                item.href === '/dashboard/events'
+                  ? isEventsActive(pathname)
+                  : pathname === item.href;
+              return <NavRow key={item.href} active={active} href={item.href} icon={item.icon} label={item.label} />;
+            })}
+          </NavSection>
 
-          {EVENT_NAV.map((item) => {
-            const href = currentEventId ? `/dashboard/events/${currentEventId}/${item.segment}` : '/dashboard/events';
-            const active = pathname.includes(`/${item.segment}`);
-            return <NavRow key={item.segment} active={active} href={href} icon={item.icon} label={item.label} />;
-          })}
+          <NavSection label="Evento atual">
+            {EVENT_NAV.map((item) => {
+              const href = currentEventId ? `/dashboard/events/${currentEventId}/${item.segment}` : '/dashboard/events';
+              const active = pathname.includes(`/${item.segment}`);
+              return <NavRow key={item.segment} active={active} href={href} icon={item.icon} label={item.label} />;
+            })}
+          </NavSection>
 
-          {TAIL_NAV.map((item) => (
-            <NavRow key={item.href} active={pathname === item.href} href={item.href} icon={item.icon} label={item.label} />
-          ))}
+          <NavSection label="Conta">
+            {TAIL_NAV.map((item) => (
+              <NavRow key={item.href} active={pathname === item.href} href={item.href} icon={item.icon} label={item.label} />
+            ))}
+          </NavSection>
         </nav>
 
         <div className="relative mt-auto rounded-2xl bg-[#F0561D] px-4 pt-[52px] pb-4 text-center">

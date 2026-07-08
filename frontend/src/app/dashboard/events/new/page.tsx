@@ -1,12 +1,11 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Alert, Button, TextArea, TextField } from '@/components/ui';
+import { Alert, Button, Card, PageHeader, TextArea, TextField } from '@/components/dash-ui';
 import { ApiError, eventsApi, type CreateEventInput } from '@/lib/api';
 
-const STEPS = ['Details', 'Dates', 'Tickets', 'Review'] as const;
+const STEPS = ['Detalhes', 'Datas', 'Ingressos', 'Revisão'] as const;
 
 interface TicketDraft {
   name: string;
@@ -52,22 +51,22 @@ export default function NewEventPage() {
   /** Returns an error message for the current step, or null when it's valid. */
   function validateStep(): string | null {
     if (step === 0 && name.trim().length < 2) {
-      return 'Give your event a name (at least 2 characters).';
+      return 'Dê um nome ao evento (pelo menos 2 caracteres).';
     }
     if (step === 0 && coverImageUrl.trim() && !isValidHttpUrl(coverImageUrl.trim())) {
-      return 'Cover image URL must be a valid http(s) link (e.g. https://example.com/image.jpg), or left blank.';
+      return 'A URL da imagem de capa precisa ser um link http(s) válido (ex.: https://exemplo.com/imagem.jpg), ou ficar em branco.';
     }
     if (step === 1 && filledDays.length === 0) {
-      return 'Add at least one date for the event.';
+      return 'Adicione pelo menos uma data para o evento.';
     }
     if (step === 2) {
       for (const ticket of tickets) {
-        if (ticket.name.trim() === '') return 'Every ticket type needs a name.';
+        if (ticket.name.trim() === '') return 'Todo tipo de ingresso precisa de um nome.';
         if (Number(ticket.price) < 0 || ticket.price === '') {
-          return 'Every ticket type needs a price (0 or more).';
+          return 'Todo tipo de ingresso precisa de um preço (0 ou mais).';
         }
         if (Number(ticket.quantityAvailable) < 0 || ticket.quantityAvailable === '') {
-          return 'Every ticket type needs an available quantity.';
+          return 'Todo tipo de ingresso precisa de uma quantidade disponível.';
         }
       }
     }
@@ -114,23 +113,19 @@ export default function NewEventPage() {
       setError(
         err instanceof ApiError
           ? err.message
-          : 'Something went wrong creating the event.',
+          : 'Algo deu errado ao criar o evento.',
       );
       setSubmitting(false);
     }
   }
 
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <Link
-          href="/dashboard/events"
-          className="text-sm text-black/50 underline underline-offset-4 dark:text-white/50"
-        >
-          ← Back to events
-        </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">New event</h1>
-      </div>
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
+      <PageHeader
+        title="Novo evento"
+        backHref="/dashboard/events"
+        backLabel="Voltar para eventos"
+      />
 
       <Stepper current={step} />
 
@@ -139,43 +134,43 @@ export default function NewEventPage() {
       {step === 0 && (
         <section className="flex flex-col gap-4">
           <TextField
-            label="Event name"
+            label="Nome do evento"
             required
             value={name}
             onChange={(event) => setName(event.target.value)}
           />
           <TextArea
-            label="Description"
+            label="Descrição"
             value={description}
             onChange={(event) => setDescription(event.target.value)}
           />
           <TextField
-            label="Location"
+            label="Local"
             value={location}
             onChange={(event) => setLocation(event.target.value)}
           />
           <TextField
-            label="Cover image URL"
+            label="URL da imagem de capa"
             type="url"
             value={coverImageUrl}
             onChange={(event) => setCoverImageUrl(event.target.value)}
-            hint="Optional. A public image URL for the event."
+            hint="Opcional. Uma URL pública de imagem para o evento."
           />
         </section>
       )}
 
       {step === 1 && (
         <section className="flex flex-col gap-3">
-          <p className="text-sm text-black/60 dark:text-white/60">
-            One day unlocks manual roll-call; two or more unlock QR check-in.
+          <p className="text-sm text-[#8E8A84]">
+            Um dia libera a chamada manual; dois ou mais liberam o check-in por QR.
           </p>
           {days.map((day, index) => (
             <div key={index} className="flex items-end gap-2">
               <TextField
-                label={`Day ${index + 1}`}
+                label={`Dia ${index + 1}`}
                 type="date"
                 value={day}
-                className="flex-1"
+                className="flex-1 [color-scheme:dark]"
                 onChange={(event) =>
                   setDays(days.map((d, i) => (i === index ? event.target.value : d)))
                 }
@@ -184,10 +179,10 @@ export default function NewEventPage() {
                 <Button
                   type="button"
                   variant="secondary"
-                  fullWidth={false}
+                  className="h-11"
                   onClick={() => setDays(days.filter((_, i) => i !== index))}
                 >
-                  Remove
+                  Remover
                 </Button>
               )}
             </div>
@@ -195,38 +190,36 @@ export default function NewEventPage() {
           <Button
             type="button"
             variant="secondary"
-            fullWidth={false}
             className="self-start"
             onClick={() => setDays([...days, ''])}
           >
-            + Add day
+            + Adicionar dia
           </Button>
         </section>
       )}
 
       {step === 2 && (
         <section className="flex flex-col gap-4">
-          <p className="text-sm text-black/60 dark:text-white/60">
-            Ticket types are optional — you can add them later.
+          <p className="text-sm text-[#8E8A84]">
+            Tipos de ingresso são opcionais — você pode adicioná-los depois.
           </p>
           {tickets.map((ticket, index) => (
-            <div
-              key={index}
-              className="flex flex-col gap-3 rounded-xl border border-black/10 p-4 dark:border-white/10"
-            >
+            <Card key={index} className="flex flex-col gap-3 p-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Ticket {index + 1}</span>
+                <span className="text-xs font-bold uppercase tracking-[0.08em] text-[#F5F2EE]">
+                  Ingresso {index + 1}
+                </span>
                 <Button
                   type="button"
                   variant="secondary"
-                  fullWidth={false}
+                  className="h-8 px-3 text-xs"
                   onClick={() => setTickets(tickets.filter((_, i) => i !== index))}
                 >
-                  Remove
+                  Remover
                 </Button>
               </div>
               <TextField
-                label="Name"
+                label="Nome"
                 value={ticket.name}
                 onChange={(event) =>
                   setTickets(
@@ -238,7 +231,7 @@ export default function NewEventPage() {
               />
               <div className="grid grid-cols-2 gap-3">
                 <TextField
-                  label="Price"
+                  label="Preço"
                   type="number"
                   min={0}
                   step="0.01"
@@ -252,7 +245,7 @@ export default function NewEventPage() {
                   }
                 />
                 <TextField
-                  label="Quantity"
+                  label="Quantidade"
                   type="number"
                   min={0}
                   value={ticket.quantityAvailable}
@@ -268,9 +261,10 @@ export default function NewEventPage() {
                 />
               </div>
               <TextField
-                label="Sales end"
+                label="Fim das vendas"
                 type="datetime-local"
                 value={ticket.saleEndsAt}
+                className="[color-scheme:dark]"
                 onChange={(event) =>
                   setTickets(
                     tickets.map((t, i) =>
@@ -278,65 +272,59 @@ export default function NewEventPage() {
                     ),
                   )
                 }
-                hint="Optional."
+                hint="Opcional."
               />
-            </div>
+            </Card>
           ))}
           <Button
             type="button"
             variant="secondary"
-            fullWidth={false}
             className="self-start"
             onClick={() => setTickets([...tickets, { ...emptyTicket }])}
           >
-            + Add ticket type
+            + Adicionar tipo de ingresso
           </Button>
         </section>
       )}
 
       {step === 3 && (
-        <section className="flex flex-col gap-3 rounded-xl border border-black/10 p-4 text-sm dark:border-white/10">
-          <Review label="Name" value={name} />
-          {location.trim() && <Review label="Location" value={location} />}
-          {coverImageUrl.trim() && <Review label="Cover image" value={coverImageUrl} />}
+        <Card className="flex flex-col gap-3 p-5 text-sm">
+          <Review label="Nome" value={name} />
+          {location.trim() && <Review label="Local" value={location} />}
+          {coverImageUrl.trim() && <Review label="Imagem de capa" value={coverImageUrl} />}
           <Review
-            label="Dates"
-            value={`${filledDays.length} day${filledDays.length === 1 ? '' : 's'}`}
+            label="Datas"
+            value={`${filledDays.length} dia${filledDays.length === 1 ? '' : 's'}`}
           />
           <Review
-            label="Ticket types"
+            label="Tipos de ingresso"
             value={
               tickets.length
-                ? tickets.map((t) => t.name.trim() || 'Untitled').join(', ')
-                : 'None'
+                ? tickets.map((t) => t.name.trim() || 'Sem título').join(', ')
+                : 'Nenhum'
             }
           />
-          <p className="text-black/50 dark:text-white/50">
-            The event is created as a draft — you can publish it later.
+          <p className="text-[#8E8A84]">
+            O evento é criado como rascunho — você pode publicá-lo depois.
           </p>
-        </section>
+        </Card>
       )}
 
       <div className="flex items-center justify-between">
         {step > 0 ? (
-          <Button type="button" variant="secondary" fullWidth={false} onClick={goBack}>
-            Back
+          <Button type="button" variant="secondary" onClick={goBack}>
+            Voltar
           </Button>
         ) : (
           <span />
         )}
         {step < STEPS.length - 1 ? (
-          <Button type="button" fullWidth={false} onClick={goNext}>
-            Next
+          <Button type="button" onClick={goNext}>
+            Próximo
           </Button>
         ) : (
-          <Button
-            type="button"
-            fullWidth={false}
-            onClick={handleCreate}
-            disabled={submitting}
-          >
-            {submitting ? 'Creating…' : 'Create event'}
+          <Button type="button" onClick={handleCreate} disabled={submitting}>
+            {submitting ? 'Criando…' : 'Criar evento'}
           </Button>
         )}
       </div>
@@ -350,24 +338,18 @@ function Stepper({ current }: { current: number }) {
       {STEPS.map((label, index) => (
         <li key={label} className="flex items-center gap-2">
           <span
-            className={`flex h-6 w-6 items-center justify-center rounded-full ${
+            className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold ${
               index <= current
-                ? 'bg-foreground text-background'
-                : 'bg-black/10 text-black/50 dark:bg-white/10 dark:text-white/50'
+                ? 'bg-[#F0561D] text-[#131215]'
+                : 'bg-[#26231F] text-[#8E8A84]'
             }`}
           >
             {index + 1}
           </span>
-          <span
-            className={
-              index === current ? 'font-medium' : 'text-black/50 dark:text-white/50'
-            }
-          >
+          <span className={index === current ? 'font-bold text-[#F5F2EE]' : 'text-[#8E8A84]'}>
             {label}
           </span>
-          {index < STEPS.length - 1 && (
-            <span className="text-black/20 dark:text-white/20">—</span>
-          )}
+          {index < STEPS.length - 1 && <span className="text-white/15">—</span>}
         </li>
       ))}
     </ol>
@@ -377,8 +359,8 @@ function Stepper({ current }: { current: number }) {
 function Review({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-4">
-      <span className="text-black/50 dark:text-white/50">{label}</span>
-      <span className="text-right font-medium">{value}</span>
+      <span className="text-[#8E8A84]">{label}</span>
+      <span className="text-right font-semibold text-[#F5F2EE]">{value}</span>
     </div>
   );
 }

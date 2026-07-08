@@ -1,22 +1,23 @@
 'use client';
 
+import { Panel, PageHeader, SectionLabel } from '@/components/dash-ui';
 import { useAuth } from '@/lib/auth/auth-context';
 
 const comingSoon = [
   {
-    title: 'Team',
+    title: 'Equipe',
     description:
-      'Invite staff to help run check-in without sharing the owner login. The role model (owner/staff) already exists — the invite flow doesn’t yet.',
+      'Convide staff para ajudar no check-in sem compartilhar o login do dono. O modelo de papéis (owner/staff) já existe — o fluxo de convite ainda não.',
   },
   {
-    title: 'Asaas connection',
+    title: 'Conexão Asaas',
     description:
-      'Connect this organizer’s own Asaas sub-account, so ticket revenue settles directly instead of pooling in one platform account (see Financeiro).',
+      'Conecte a subconta Asaas do próprio organizador, para que a receita dos ingressos seja repassada diretamente em vez de acumular em uma conta única da plataforma (veja Financeiro).',
   },
   {
-    title: 'Subdomain & branding',
+    title: 'Subdomínio & marca',
     description:
-      'Customize the public landing pages’ subdomain and appearance.',
+      'Personalize o subdomínio e a aparência das páginas públicas.',
   },
 ];
 
@@ -24,39 +25,43 @@ export default function SettingsPage() {
   const { user } = useAuth();
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-8">
-      <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">
+      <PageHeader title="Configurações" subtitle="Sua conta e preferências do organizador" />
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-medium">Account</h2>
-        <div className="grid grid-cols-2 gap-4 rounded-xl border border-black/10 px-4 py-4 text-sm dark:border-white/10">
+        <SectionLabel>Conta</SectionLabel>
+        <Panel className="grid grid-cols-1 gap-4 p-5 text-sm sm:grid-cols-3">
           <div className="flex flex-col gap-1">
-            <span className="text-black/50 dark:text-white/50">Name</span>
-            <span>{user?.name}</span>
+            <span className="text-xs font-bold uppercase tracking-[0.08em] text-[#8E8A84]">
+              Nome
+            </span>
+            <span className="font-semibold text-[#F5F2EE]">{user?.name}</span>
           </div>
           <div className="flex flex-col gap-1">
-            <span className="text-black/50 dark:text-white/50">Email</span>
-            <span>{user?.email}</span>
+            <span className="text-xs font-bold uppercase tracking-[0.08em] text-[#8E8A84]">
+              E-mail
+            </span>
+            <span className="truncate font-semibold text-[#F5F2EE]">{user?.email}</span>
           </div>
           <div className="flex flex-col gap-1">
-            <span className="text-black/50 dark:text-white/50">Role</span>
-            <span>{user?.role}</span>
+            <span className="text-xs font-bold uppercase tracking-[0.08em] text-[#8E8A84]">
+              Papel
+            </span>
+            <span className="font-semibold text-[#F5F2EE]">{user?.role}</span>
           </div>
-        </div>
+        </Panel>
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-medium">Coming soon</h2>
-        <ul className="flex flex-col gap-2">
+        <SectionLabel>Em breve</SectionLabel>
+        <ul className="flex flex-col gap-2.5">
           {comingSoon.map((item) => (
             <li
               key={item.title}
-              className="rounded-xl border border-dashed border-black/15 px-4 py-4 dark:border-white/15"
+              className="rounded-[14px] border border-dashed border-white/15 px-5 py-4"
             >
-              <p className="text-sm font-medium">{item.title}</p>
-              <p className="mt-1 text-sm text-black/60 dark:text-white/60">
-                {item.description}
-              </p>
+              <p className="text-sm font-bold text-[#F5F2EE]">{item.title}</p>
+              <p className="mt-1 text-sm leading-relaxed text-[#8E8A84]">{item.description}</p>
             </li>
           ))}
         </ul>
