@@ -9,7 +9,9 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { RequirePermission } from '../auth/decorators/permission.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PermissionGuard } from '../auth/guards/permission.guard';
 import type { JwtPayload } from '../auth/types/jwt-payload.type';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateCertificateDto } from './dto/update-certificate.dto';
@@ -18,7 +20,8 @@ import { UpdateEventDto } from './dto/update-event.dto';
 import { EventsService } from './events.service';
 
 @Controller('events')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionGuard)
+@RequirePermission('eventos')
 export class EventsController {
   constructor(private readonly eventsService: EventsService) {}
 

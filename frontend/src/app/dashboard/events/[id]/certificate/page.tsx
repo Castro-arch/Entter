@@ -212,6 +212,7 @@ export default function CertificatePage() {
           <TextField
             label="Atraso após o último dia (horas)"
             type="number"
+            placeholder="24"
             min={0}
             value={autoDelayHours}
             onChange={(e) => setAutoDelayHours(e.target.value)}

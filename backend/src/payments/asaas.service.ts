@@ -11,6 +11,9 @@ export interface CreatePaymentParams {
   value: number;
   description: string;
   buyer: { name: string; email: string; phone?: string };
+  /** Organizer's own Asaas key — when set, the charge is created under their
+   * account instead of the platform's. */
+  credentials?: { apiKey: string };
 }
 
 export interface CreatedPayment {
@@ -46,7 +49,7 @@ export class AsaasService {
   }
 
   async createPayment(params: CreatePaymentParams): Promise<CreatedPayment> {
-    if (!this.isConfigured) {
+    if (!params.credentials?.apiKey && !this.isConfigured) {
       const frontendUrl = this.config.get<string>(
         'FRONTEND_URL',
         'http://localhost:3001',
@@ -60,7 +63,8 @@ export class AsaasService {
       };
     }
 
-    const customerId = await this.createCustomer(params.buyer);
+    const apiKey = params.credentials?.apiKey ?? (this.apiKey as string);
+    const customerId = await this.createCustomer(params.buyer, apiKey);
     const payment = await this.request<{ id: string; invoiceUrl: string }>(
       'POST',
       '/payments',
@@ -72,20 +76,32 @@ export class AsaasService {
         description: params.description,
         externalReference: params.orderId,
       },
+      apiKey,
     );
     return { id: payment.id, invoiceUrl: payment.invoiceUrl };
   }
 
-  private async createCustomer(buyer: {
-    name: string;
-    email: string;
-    phone?: string;
-  }): Promise<string> {
-    const customer = await this.request<{ id: string }>('POST', '/customers', {
-      name: buyer.name,
-      email: buyer.email,
-      mobilePhone: buyer.phone,
-    });
+  /** Cheap authenticated call used to confirm an organizer-supplied key is
+   * valid before persisting it. */
+  async validateApiKey(apiKey: string): Promise<boolean> {
+    try {
+      await this.request('GET', '/customers?limit=1', undefined, apiKey);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private async createCustomer(
+    buyer: { name: string; email: string; phone?: string },
+    apiKey: string,
+  ): Promise<string> {
+    const customer = await this.request<{ id: string }>(
+      'POST',
+      '/customers',
+      { name: buyer.name, email: buyer.email, mobilePhone: buyer.phone },
+      apiKey,
+    );
     return customer.id;
   }
 
@@ -93,6 +109,7 @@ export class AsaasService {
     method: string,
     path: string,
     body: unknown,
+    apiKey: string = this.apiKey as string,
   ): Promise<T> {
     let response: Response;
     try {
@@ -100,9 +117,9 @@ export class AsaasService {
         method,
         headers: {
           'Content-Type': 'application/json',
-          access_token: this.apiKey as string,
+          access_token: apiKey,
         },
-        body: JSON.stringify(body),
+        body: body === undefined ? undefined : JSON.stringify(body),
       });
     } catch (error) {
       this.logger.error(`Asaas request failed: ${String(error)}`);

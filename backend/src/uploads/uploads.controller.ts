@@ -22,6 +22,7 @@ const ARTWORK_TYPES = /^image\/(png|jpe?g|webp)$/;
 const ARTWORK_MAX_BYTES = 8 * 1024 * 1024;
 const CERTIFICATE_TYPES = /^application\/pdf$/;
 const CERTIFICATE_MAX_BYTES = 15 * 1024 * 1024;
+const LOGO_MAX_BYTES = 4 * 1024 * 1024;
 
 /** Organizer-scoped storage: `<UPLOADS_ROOT>/<tenantId>/<uuid>.<ext>`. The
  * guard runs before interceptors in Nest's pipeline, so `req.user` is
@@ -79,6 +80,17 @@ export class UploadsController {
     ),
   )
   uploadCertificateTemplate(
+    @CurrentUser() user: JwtPayload,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.toResponse(user, file);
+  }
+
+  @Post('tenant-logo')
+  @UseInterceptors(
+    FileInterceptor('file', multerOptionsFor(ARTWORK_TYPES, LOGO_MAX_BYTES)),
+  )
+  uploadTenantLogo(
     @CurrentUser() user: JwtPayload,
     @UploadedFile() file?: Express.Multer.File,
   ) {

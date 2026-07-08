@@ -135,23 +135,27 @@ export default function NewEventPage() {
         <section className="flex flex-col gap-4">
           <TextField
             label="Nome do evento"
+            placeholder="Ex: Conferência de Tecnologia 2026"
             required
             value={name}
             onChange={(event) => setName(event.target.value)}
           />
           <TextArea
             label="Descrição"
+            placeholder="Conte aos participantes sobre o evento…"
             value={description}
             onChange={(event) => setDescription(event.target.value)}
           />
           <TextField
             label="Local"
+            placeholder="Ex: Centro de Convenções, São Paulo"
             value={location}
             onChange={(event) => setLocation(event.target.value)}
           />
           <TextField
             label="URL da imagem de capa"
             type="url"
+            placeholder="https://…"
             value={coverImageUrl}
             onChange={(event) => setCoverImageUrl(event.target.value)}
             hint="Opcional. Uma URL pública de imagem para o evento."
@@ -220,6 +224,7 @@ export default function NewEventPage() {
               </div>
               <TextField
                 label="Nome"
+                placeholder="Ex: Ingresso VIP"
                 value={ticket.name}
                 onChange={(event) =>
                   setTickets(
@@ -233,6 +238,7 @@ export default function NewEventPage() {
                 <TextField
                   label="Preço"
                   type="number"
+                  placeholder="0,00"
                   min={0}
                   step="0.01"
                   value={ticket.price}
@@ -247,6 +253,7 @@ export default function NewEventPage() {
                 <TextField
                   label="Quantidade"
                   type="number"
+                  placeholder="100"
                   min={0}
                   value={ticket.quantityAvailable}
                   onChange={(event) =>

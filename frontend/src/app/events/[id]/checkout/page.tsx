@@ -108,6 +108,7 @@ function CheckoutForm() {
             {error && <Alert>{error}</Alert>}
             <TextField
               label="Full name"
+              placeholder="Jane Doe"
               autoComplete="name"
               required
               value={buyerName}
@@ -116,6 +117,7 @@ function CheckoutForm() {
             <TextField
               label="Email"
               type="email"
+              placeholder="you@example.com"
               autoComplete="email"
               required
               value={buyerEmail}
@@ -124,6 +126,7 @@ function CheckoutForm() {
             <TextField
               label="Phone"
               type="tel"
+              placeholder="(555) 123-4567"
               autoComplete="tel"
               value={buyerPhone}
               onChange={(e) => setBuyerPhone(e.target.value)}

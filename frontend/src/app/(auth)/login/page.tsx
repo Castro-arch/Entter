@@ -51,6 +51,7 @@ export default function LoginPage() {
       <TextField
         label="Email"
         type="email"
+        placeholder="you@example.com"
         autoComplete="email"
         required
         value={email}
@@ -59,6 +60,7 @@ export default function LoginPage() {
       <TextField
         label="Password"
         type="password"
+        placeholder="••••••••"
         autoComplete="current-password"
         required
         value={password}

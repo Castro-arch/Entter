@@ -6,12 +6,15 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { RequirePermission } from '../auth/decorators/permission.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PermissionGuard } from '../auth/guards/permission.guard';
 import type { JwtPayload } from '../auth/types/jwt-payload.type';
 import { CertificatesService } from './certificates.service';
 
 @Controller('events/:eventId')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionGuard)
+@RequirePermission('certificates')
 export class CertificatesController {
   constructor(private readonly certificatesService: CertificatesService) {}
 

@@ -3,13 +3,16 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
-import { eventsApi, type EventEntity } from '@/lib/api';
+import { eventsApi, type EventEntity, type Permissions } from '@/lib/api';
+import { useAuth } from '@/lib/auth/auth-context';
 import { useCurrentEventId } from '@/lib/use-current-event-id';
 
 interface NavItem {
   label: string;
   href: string;
   icon: ReactNode;
+  /** Staff without this permission don't see the item; owners always do. */
+  permission?: keyof Permissions;
 }
 
 // Icons copied verbatim (same viewBox/paths) from the approved design so the
@@ -69,14 +72,14 @@ const icons = {
 
 const GLOBAL_NAV: NavItem[] = [
   { label: 'Dashboard', href: '/dashboard', icon: icons.dashboard },
-  { label: 'Eventos', href: '/dashboard/events', icon: icons.eventos },
-  { label: 'Financeiro', href: '/dashboard/financeiro', icon: icons.financeiro },
+  { label: 'Eventos', href: '/dashboard/events', icon: icons.eventos, permission: 'canEventos' },
+  { label: 'Financeiro', href: '/dashboard/financeiro', icon: icons.financeiro, permission: 'canFinanceiro' },
 ];
 
-const EVENT_NAV: { label: string; segment: string; icon: ReactNode }[] = [
-  { label: 'Check-in', segment: 'check-in', icon: icons.checkin },
-  { label: 'Credenciais', segment: 'credential', icon: icons.credenciais },
-  { label: 'Certificados', segment: 'certificate', icon: icons.certificados },
+const EVENT_NAV: { label: string; segment: string; icon: ReactNode; permission?: keyof Permissions }[] = [
+  { label: 'Check-in', segment: 'check-in', icon: icons.checkin, permission: 'canCheckIn' },
+  { label: 'Credenciais', segment: 'credential', icon: icons.credenciais, permission: 'canEventos' },
+  { label: 'Certificados', segment: 'certificate', icon: icons.certificados, permission: 'canCertificates' },
 ];
 
 const TAIL_NAV: NavItem[] = [
@@ -126,8 +129,15 @@ function NavRow({ active, href, icon, label }: { active: boolean; href: string; 
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { user } = useAuth();
   const [events, setEvents] = useState<EventEntity[] | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Owners always see every area; staff only see what they've been granted.
+  function isVisible(permission?: keyof Permissions): boolean {
+    if (!permission || !user || user.role === 'OWNER') return true;
+    return user[permission];
+  }
 
   useEffect(() => {
     eventsApi.list().then(setEvents).catch(() => setEvents([]));
@@ -181,7 +191,7 @@ export default function Sidebar() {
 
         <nav className="flex flex-col text-[13.5px]">
           <NavSection label="Geral">
-            {GLOBAL_NAV.map((item) => {
+            {GLOBAL_NAV.filter((item) => isVisible(item.permission)).map((item) => {
               const active =
                 item.href === '/dashboard/events'
                   ? isEventsActive(pathname)
@@ -191,7 +201,7 @@ export default function Sidebar() {
           </NavSection>
 
           <NavSection label="Evento atual">
-            {EVENT_NAV.map((item) => {
+            {EVENT_NAV.filter((item) => isVisible(item.permission)).map((item) => {
               const href = currentEventId ? `/dashboard/events/${currentEventId}/${item.segment}` : '/dashboard/events';
               const active = pathname.includes(`/${item.segment}`);
               return <NavRow key={item.segment} active={active} href={href} icon={item.icon} label={item.label} />;
@@ -205,22 +215,22 @@ export default function Sidebar() {
           </NavSection>
         </nav>
 
-        <div className="relative mt-auto rounded-2xl bg-[#F0561D] px-4 pt-[52px] pb-4 text-center">
-          <div className="absolute left-1/2 top-[-26px] flex h-[58px] w-[58px] -translate-x-1/2 items-center justify-center rounded-full border-[3px] border-[#F0561D] bg-[#131215]">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#F5F2EE" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <div className="relative mt-auto rounded-2xl bg-[#F0561D] px-4 pt-[34px] pb-3 text-center">
+          <div className="absolute left-1/2 top-[-18px] flex h-[42px] w-[42px] -translate-x-1/2 items-center justify-center rounded-full border-[3px] border-[#F0561D] bg-[#131215]">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#F5F2EE" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <rect x="4" y="4" width="6" height="6" rx="1" />
               <rect x="14" y="4" width="6" height="6" rx="1" />
               <rect x="4" y="14" width="6" height="6" rx="1" />
               <path d="M14 14h2v2h-2zM18 14h2v2h-2zM14 18h2v2h-2zM18 18h2v2h-2z" fill="#F5F2EE" stroke="none" />
             </svg>
           </div>
-          <div className="flex flex-col items-center gap-0.5 text-[19px] font-extrabold leading-[1.15] text-[#131215]">
+          <div className="flex flex-col items-center gap-0.5 text-[14.5px] font-extrabold leading-[1.15] text-[#131215]">
             <span>Seu próximo</span>
             <span>evento começa aqui</span>
           </div>
           <Link
             href="/dashboard/events/new"
-            className="mt-3 block rounded-[9px] bg-[#131215] py-2.5 text-[12.5px] font-semibold text-[#F5F2EE] transition-colors hover:bg-black"
+            className="mt-2.5 block rounded-[9px] bg-[#131215] py-2 text-[12px] font-semibold text-[#F5F2EE] transition-colors hover:bg-black"
           >
             Criar Evento
           </Link>

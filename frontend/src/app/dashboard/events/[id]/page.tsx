@@ -291,17 +291,20 @@ export default function EventDetailPage() {
         {saveError && <Alert>{saveError}</Alert>}
         <TextField
           label="Nome do evento"
+          placeholder="Ex: Conferência de Tecnologia 2026"
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
         <TextArea
           label="Descrição"
+          placeholder="Conte aos participantes sobre o evento…"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
         <TextField
           label="Local"
+          placeholder="Ex: Centro de Convenções, São Paulo"
           value={location}
           onChange={(e) => setLocation(e.target.value)}
         />

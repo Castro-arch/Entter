@@ -57,6 +57,10 @@ model Tenant {
   name           String
   subdomain      String   @unique
   asaasAccountId String?  @map("asaas_account_id")
+  /// Organizer's own Asaas API key — when set, checkout charges through this
+  /// key instead of the platform's, so revenue lands directly in their account.
+  asaasApiKey    String?  @map("asaas_api_key")
+  logoUrl        String?  @map("logo_url")
   createdAt      DateTime @default(now()) @map("created_at")
 
   users  User[]
@@ -77,6 +81,14 @@ model User {
   passwordHash String   @map("password_hash")
   role         UserRole @default(OWNER)
   createdAt    DateTime @default(now()) @map("created_at")
+
+  /// Per-area access for STAFF users, toggled by the OWNER in Configurações →
+  /// Equipe. Ignored for OWNER, who always has full access regardless of
+  /// these flags.
+  canCheckIn      Boolean @default(true) @map("can_check_in")
+  canCertificates Boolean @default(true) @map("can_certificates")
+  canFinanceiro   Boolean @default(true) @map("can_financeiro")
+  canEventos      Boolean @default(true) @map("can_eventos")
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 

@@ -29,8 +29,10 @@ export class UpdateEventDto {
   @MaxLength(300)
   location?: string;
 
+  // require_tld: false — cover images are served from our own BACKEND_URL,
+  // which is `http://localhost:...` in dev; the default IsUrl rejects that.
   @IsOptional()
-  @IsUrl()
+  @IsUrl({ require_tld: false })
   coverImageUrl?: string;
 
   @IsOptional()

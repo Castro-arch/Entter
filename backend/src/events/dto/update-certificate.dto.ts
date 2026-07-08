@@ -16,8 +16,10 @@ export enum CertificateDispatchModeDto {
 }
 
 export class UpdateCertificateDto {
+  // require_tld: false — templates are served from our own BACKEND_URL, which
+  // is `http://localhost:...` in dev; the default IsUrl rejects that as TLD-less.
   @IsOptional()
-  @IsUrl()
+  @IsUrl({ require_tld: false })
   templateUrl?: string;
 
   @IsOptional()

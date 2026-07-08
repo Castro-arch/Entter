@@ -1,13 +1,18 @@
 'use client';
 
 import { useEffect, useState, type ChangeEvent } from 'react';
-import { Image as KonvaImage, Layer, Stage, Text } from 'react-konva';
+import { Image as KonvaImage, Layer, Line, Stage, Text } from 'react-konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 import { Alert, Button, FileDropzone, SelectField, TextField } from '@/components/dash-ui';
 import { ApiError, eventsApi, uploadsApi, type NamePosition, type TextAlign } from '@/lib/api';
 
-const STAGE_WIDTH = 520;
-const PLACEHOLDER_HEIGHT = 300;
+/** The preview is capped to fit inside this box (contain-fit on the artwork's
+ * aspect ratio) so tall/portrait artwork doesn't blow up the page. */
+const MAX_STAGE_WIDTH = 420;
+const MAX_STAGE_HEIGHT = 420;
+const PLACEHOLDER_HEIGHT = 240;
+/** Distance (px) within which the dragged name snaps to the center guide. */
+const SNAP_THRESHOLD = 6;
 const DEFAULT_POSITION: Required<NamePosition> = {
   xPct: 50,
   yPct: 50,
@@ -45,6 +50,7 @@ export default function CredentialEditor({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [guide, setGuide] = useState({ v: false, h: false });
 
   useEffect(() => {
     if (!artworkUrl) return;
@@ -65,17 +71,42 @@ export default function CredentialEditor({
     };
   }, [artworkUrl]);
 
-  const stageHeight = image
-    ? Math.round(STAGE_WIDTH * (image.height / image.width))
-    : PLACEHOLDER_HEIGHT;
+  let stageWidth = MAX_STAGE_WIDTH;
+  let stageHeight = PLACEHOLDER_HEIGHT;
+  if (image) {
+    const aspect = image.width / image.height;
+    stageWidth = MAX_STAGE_WIDTH;
+    stageHeight = Math.round(MAX_STAGE_WIDTH / aspect);
+    if (stageHeight > MAX_STAGE_HEIGHT) {
+      stageHeight = MAX_STAGE_HEIGHT;
+      stageWidth = Math.round(MAX_STAGE_HEIGHT * aspect);
+    }
+  }
   const fontSize = (position.fontPct / 100) * stageHeight;
+
+  /** Snaps the name to the horizontal/vertical center while dragging and
+   * shows a guide line for whichever axis is currently snapped. */
+  function handleDragMove(event: KonvaEventObject<DragEvent>) {
+    const node = event.target;
+    const centerX = stageWidth / 2;
+    const centerY = stageHeight / 2;
+    const nodeCenterX = node.x() + node.width() / 2;
+    const nodeCenterY = node.y() + node.height() / 2;
+
+    const snapV = Math.abs(nodeCenterX - centerX) <= SNAP_THRESHOLD;
+    const snapH = Math.abs(nodeCenterY - centerY) <= SNAP_THRESHOLD;
+    if (snapV) node.x(centerX - node.width() / 2);
+    if (snapH) node.y(centerY - node.height() / 2);
+    setGuide({ v: snapV, h: snapH });
+  }
 
   function handleDragEnd(event: KonvaEventObject<DragEvent>) {
     const node = event.target;
+    setGuide({ v: false, h: false });
     setSaved(false);
     setPosition((current) => ({
       ...current,
-      xPct: clampPct((node.x() / STAGE_WIDTH) * 100),
+      xPct: clampPct((node.x() / stageWidth) * 100),
       yPct: clampPct((node.y() / stageHeight) * 100),
     }));
   }
@@ -132,22 +163,41 @@ export default function CredentialEditor({
 
       <div
         className="overflow-hidden rounded-[14px] border border-white/10 bg-[#1C1B1F]"
-        style={{ width: STAGE_WIDTH, maxWidth: '100%' }}
+        style={{ width: stageWidth, maxWidth: '100%' }}
       >
-        <Stage width={STAGE_WIDTH} height={stageHeight}>
+        <Stage width={stageWidth} height={stageHeight}>
           <Layer>
             {image && (
-              <KonvaImage image={image} width={STAGE_WIDTH} height={stageHeight} />
+              <KonvaImage image={image} width={stageWidth} height={stageHeight} />
+            )}
+            {guide.v && (
+              <Line
+                points={[stageWidth / 2, 0, stageWidth / 2, stageHeight]}
+                stroke="#F0561D"
+                strokeWidth={1}
+                dash={[4, 4]}
+                listening={false}
+              />
+            )}
+            {guide.h && (
+              <Line
+                points={[0, stageHeight / 2, stageWidth, stageHeight / 2]}
+                stroke="#F0561D"
+                strokeWidth={1}
+                dash={[4, 4]}
+                listening={false}
+              />
             )}
             <Text
               text={sampleName || 'Nome do Participante'}
-              x={(position.xPct / 100) * STAGE_WIDTH}
+              x={(position.xPct / 100) * stageWidth}
               y={(position.yPct / 100) * stageHeight}
               fontSize={fontSize}
               fontStyle="bold"
               fill={position.color}
               align={position.align}
               draggable
+              onDragMove={handleDragMove}
               onDragEnd={handleDragEnd}
             />
           </Layer>
@@ -164,6 +214,7 @@ export default function CredentialEditor({
       <div className="grid grid-cols-2 gap-4">
         <TextField
           label="Nome de exemplo"
+          placeholder="Ex: João Silva"
           value={sampleName}
           onChange={(event) => setSampleName(event.target.value)}
         />

@@ -8,7 +8,15 @@
 
 export type UserRole = 'OWNER' | 'STAFF';
 
-export interface User {
+/** Per-area access for STAFF users; ignored (always true in effect) for OWNER. */
+export interface Permissions {
+  canCheckIn: boolean;
+  canCertificates: boolean;
+  canFinanceiro: boolean;
+  canEventos: boolean;
+}
+
+export interface User extends Permissions {
   id: string;
   tenantId: string;
   name: string;
@@ -333,6 +341,65 @@ async function uploadFile(path: string, file: File): Promise<UploadResult> {
 export const uploadsApi = {
   credentialArtwork: (file: File) => uploadFile('/uploads/credential-artwork', file),
   certificateTemplate: (file: File) => uploadFile('/uploads/certificate-template', file),
+  tenantLogo: (file: File) => uploadFile('/uploads/tenant-logo', file),
+};
+
+export interface TeamMember extends Permissions {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  createdAt: string;
+}
+
+export interface InviteTeamMemberInput {
+  name: string;
+  email: string;
+}
+
+export const teamApi = {
+  list: () => request<TeamMember[]>('/team'),
+  invite: (input: InviteTeamMemberInput) =>
+    request<{ user: TeamMember; temporaryPassword: string }>('/team', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+  remove: (id: string) => request<void>(`/team/${id}`, { method: 'DELETE' }),
+  updatePermissions: (id: string, input: Partial<Permissions>) =>
+    request<TeamMember>(`/team/${id}/permissions`, {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    }),
+};
+
+export interface TenantProfile {
+  id: string;
+  name: string;
+  subdomain: string;
+  logoUrl: string | null;
+  asaasConnected: boolean;
+}
+
+export interface UpdateTenantInput {
+  name?: string;
+  subdomain?: string;
+  logoUrl?: string;
+}
+
+export const tenantApi = {
+  get: () => request<TenantProfile>('/tenant'),
+  update: (input: UpdateTenantInput) =>
+    request<TenantProfile>('/tenant', {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    }),
+  connectAsaas: (apiKey: string) =>
+    request<TenantProfile>('/tenant/asaas', {
+      method: 'PATCH',
+      body: JSON.stringify({ apiKey }),
+    }),
+  disconnectAsaas: () =>
+    request<TenantProfile>('/tenant/asaas', { method: 'DELETE' }),
 };
 
 export const attendanceApi = {

@@ -101,6 +101,10 @@ export class AuthService {
       email: user.email,
       role: user.role,
       createdAt: user.createdAt,
+      canCheckIn: user.canCheckIn,
+      canCertificates: user.canCertificates,
+      canFinanceiro: user.canFinanceiro,
+      canEventos: user.canEventos,
     };
   }
 }

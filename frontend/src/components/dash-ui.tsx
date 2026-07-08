@@ -505,6 +505,39 @@ export function FileDropzone({
   );
 }
 
+/** Small on/off switch, e.g. for per-area permission toggles. */
+export function Toggle({
+  checked,
+  onChange,
+  label,
+  disabled = false,
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label?: string;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className={`relative inline-flex h-6 w-10 shrink-0 items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+        checked ? 'bg-[#F0561D]' : 'bg-[#26231F]'
+      }`}
+    >
+      <span
+        className={`inline-block h-[18px] w-[18px] transform rounded-full bg-[#F5F2EE] transition-transform ${
+          checked ? 'translate-x-[19px]' : 'translate-x-[3px]'
+        }`}
+      />
+    </button>
+  );
+}
+
 export interface SegmentedOption<T extends string> {
   value: T;
   label: string;

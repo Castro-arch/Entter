@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/lib/auth/auth-context';
 import CheckinTimeChart from '@/components/dashboard/checkin-time-chart';
 
@@ -23,7 +25,267 @@ const HOVER_CSS = `
 .v2-create:hover{background:#FF6A31 !important}
 .v2-seeall:hover{color:#F5F2EE !important}
 .v2-manage:hover{background:#FFFFFF !important}
+.v2-menu-item:hover{background:#26231F !important}
 `;
+
+/** Avatar button that opens a small dropdown (Perfil / Sair) — the app's only
+ * profile-facing pages today are Configurações (account info) and logout. */
+function ProfileMenu({ initial }: { initial: string }) {
+  const { logout } = useAuth();
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  async function handleLogout() {
+    await logout();
+    router.replace('/login');
+  }
+
+  const menuItemStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    width: '100%',
+    padding: '9px 12px',
+    borderRadius: 9,
+    fontSize: 13,
+    fontWeight: 600,
+    color: '#F5F2EE',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    textAlign: 'left' as const,
+  };
+
+  return (
+    <div ref={containerRef} style={{ position: 'relative' }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Menu do perfil"
+        style={{
+          display: 'grid',
+          placeItems: 'center',
+          width: 36,
+          height: 36,
+          borderRadius: '50%',
+          background: '#F0561D',
+          color: '#131215',
+          fontSize: 13,
+          fontWeight: 800,
+          border: 'none',
+          cursor: 'pointer',
+          flexShrink: 0,
+        }}
+      >
+        {initial}
+      </button>
+      {open && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 44,
+            right: 0,
+            minWidth: 180,
+            background: '#1C1B1F',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 14,
+            padding: 6,
+            boxShadow: '0 12px 32px rgba(0,0,0,0.4)',
+            zIndex: 50,
+          }}
+        >
+          <Link
+            href="/dashboard/settings"
+            onClick={() => setOpen(false)}
+            className="v2-menu-item"
+            style={menuItemStyle}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 20c0-4 4-6 8-6s8 2 8 6" />
+            </svg>
+            Perfil
+          </Link>
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '6px 4px' }} />
+          <button type="button" onClick={handleLogout} className="v2-menu-item" style={menuItemStyle}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+              <path d="M16 17l5-5-5-5" />
+              <path d="M21 12H9" />
+            </svg>
+            Sair
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Simplified vector flags (no external image dependency) — recognizable at
+// this size, not pixel-accurate reproductions.
+const BrazilFlag = () => (
+  <svg width="20" height="14" viewBox="0 0 20 14" style={{ borderRadius: 3, display: 'block' }}>
+    <rect width="20" height="14" fill="#009739" />
+    <polygon points="10,2 18,7 10,12 2,7" fill="#FEDD00" />
+    <circle cx="10" cy="7" r="3.1" fill="#012169" />
+  </svg>
+);
+
+const USFlag = () => (
+  <svg width="20" height="14" viewBox="0 0 20 14" style={{ borderRadius: 3, display: 'block' }}>
+    <rect width="20" height="14" fill="#B22234" />
+    {[1.08, 3.23, 5.38, 7.54, 9.69, 11.85].map((y) => (
+      <rect key={y} y={y} width="20" height="1.08" fill="#FFFFFF" />
+    ))}
+    <rect width="8.6" height="7.54" fill="#3C3B6E" />
+  </svg>
+);
+
+const SpainFlag = () => (
+  <svg width="20" height="14" viewBox="0 0 20 14" style={{ borderRadius: 3, display: 'block' }}>
+    <rect width="20" height="14" fill="#AA151B" />
+    <rect y="3.5" width="20" height="7" fill="#F1BF00" />
+  </svg>
+);
+
+const LANGUAGES = [
+  { code: 'pt', label: 'Português', Flag: BrazilFlag },
+  { code: 'en', label: 'English', Flag: USFlag },
+  { code: 'es', label: 'Español', Flag: SpainFlag },
+] as const;
+
+type LanguageCode = (typeof LANGUAGES)[number]['code'];
+const LANGUAGE_STORAGE_KEY = 'entter-language';
+
+/** Language selector — persists the pick locally. The app's copy is still
+ * Portuguese-only; this only stores the preference for a future translation
+ * pass, it doesn't change any on-screen text yet. */
+function LanguageSwitcher() {
+  const [language, setLanguage] = useState<LanguageCode>('pt');
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem(LANGUAGE_STORAGE_KEY) as LanguageCode | null;
+    if (stored && LANGUAGES.some((l) => l.code === stored)) setLanguage(stored);
+  }, []);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  function select(code: LanguageCode) {
+    setLanguage(code);
+    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, code);
+    setOpen(false);
+  }
+
+  const current = LANGUAGES.find((l) => l.code === language) ?? LANGUAGES[0];
+
+  return (
+    <div ref={containerRef} style={{ position: 'relative' }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Trocar idioma"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 7,
+          height: 36,
+          background: '#1C1B1F',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 10,
+          padding: '0 12px',
+          color: '#F5F2EE',
+          fontSize: 13,
+          fontWeight: 600,
+          cursor: 'pointer',
+        }}
+      >
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{
+            transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
+            transition: 'transform 0.15s',
+            flexShrink: 0,
+          }}
+        >
+          <path d="M9 6l6 6-6 6" />
+        </svg>
+        <current.Flag />
+        <span>{current.label}</span>
+      </button>
+      {open && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 44,
+            right: 0,
+            minWidth: 168,
+            background: '#1C1B1F',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 14,
+            padding: 6,
+            boxShadow: '0 12px 32px rgba(0,0,0,0.4)',
+            zIndex: 50,
+          }}
+        >
+          {LANGUAGES.map(({ code, label, Flag }) => (
+            <button
+              key={code}
+              type="button"
+              onClick={() => select(code)}
+              className="v2-menu-item"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                width: '100%',
+                padding: '9px 12px',
+                borderRadius: 9,
+                fontSize: 13,
+                fontWeight: 600,
+                color: code === language ? '#F0561D' : '#F5F2EE',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
+            >
+              <Flag />
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function DashboardOverviewPage() {
   const { user } = useAuth();
@@ -59,66 +321,9 @@ export default function DashboardOverviewPage() {
           >
             Welcome, {userName}.
           </h1>
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 9,
-                width: '100%',
-                maxWidth: 260,
-                background: '#1C1B1F',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 999,
-                padding: '9px 16px',
-                color: '#8E8A84',
-                fontSize: 13,
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8E8A84" strokeWidth="2" strokeLinecap="round">
-                <circle cx="11" cy="11" r="7" />
-                <path d="M21 21l-4.3-4.3" />
-              </svg>
-              Search
-            </div>
-          </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10 }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              background: '#1C1B1F',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 10,
-              padding: '9px 14px',
-              fontSize: 12.5,
-              fontWeight: 600,
-            }}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#F5F2EE" strokeWidth="2" strokeLinecap="round">
-              <rect x="3" y="4" width="18" height="17" rx="2" />
-              <path d="M3 9h18M8 2v4M16 2v4" />
-            </svg>
-            12 mai
-          </div>
-          <div
-            style={{
-              display: 'grid',
-              placeItems: 'center',
-              width: 36,
-              height: 36,
-              borderRadius: 10,
-              background: '#1C1B1F',
-              border: '1px solid rgba(255,255,255,0.08)',
-            }}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F5F2EE" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M10 21h4" />
-            </svg>
-          </div>
+          <LanguageSwitcher />
           <Link
             href="/dashboard/events/new"
             className="v2-create"
@@ -137,6 +342,7 @@ export default function DashboardOverviewPage() {
           >
             <span style={{ fontSize: 15, lineHeight: 1 }}>+</span> Criar Evento
           </Link>
+          <ProfileMenu initial={userName.charAt(0).toUpperCase()} />
         </div>
       </header>
 

@@ -11,6 +11,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import { PublicModule } from './public/public.module';
 import { QueueModule } from './queue/queue.module';
 import { RedisModule } from './redis/redis.module';
+import { TeamModule } from './team/team.module';
+import { TenantsModule } from './tenants/tenants.module';
 import { UploadsModule } from './uploads/uploads.module';
 
 // NOTE: DashboardModule is deliberately NOT imported here — the organizer
@@ -30,6 +32,8 @@ import { UploadsModule } from './uploads/uploads.module';
     QueueModule,
     CertificatesModule,
     UploadsModule,
+    TeamModule,
+    TenantsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

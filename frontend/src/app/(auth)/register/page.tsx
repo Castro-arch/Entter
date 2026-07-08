@@ -59,6 +59,7 @@ export default function RegisterPage() {
 
       <TextField
         label="Your name"
+        placeholder="Jane Doe"
         autoComplete="name"
         required
         value={name}
@@ -66,12 +67,14 @@ export default function RegisterPage() {
       />
       <TextField
         label="Organization name"
+        placeholder="Acme Events"
         required
         value={tenantName}
         onChange={(event) => setTenantName(event.target.value)}
       />
       <TextField
         label="Subdomain"
+        placeholder="acme"
         required
         value={subdomain}
         onChange={(event) => setSubdomain(normalizeSubdomain(event.target.value))}
@@ -80,6 +83,7 @@ export default function RegisterPage() {
       <TextField
         label="Email"
         type="email"
+        placeholder="you@example.com"
         autoComplete="email"
         required
         value={email}
@@ -88,6 +92,7 @@ export default function RegisterPage() {
       <TextField
         label="Password"
         type="password"
+        placeholder="••••••••"
         autoComplete="new-password"
         required
         minLength={8}

@@ -49,8 +49,10 @@ export class NamePositionDto {
 }
 
 export class UpdateCredentialDto {
+  // require_tld: false — artwork is served from our own BACKEND_URL, which is
+  // `http://localhost:...` in dev; the default IsUrl rejects that as TLD-less.
   @IsOptional()
-  @IsUrl()
+  @IsUrl({ require_tld: false })
   artworkUrl?: string;
 
   @IsOptional()

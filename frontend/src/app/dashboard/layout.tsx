@@ -29,11 +29,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   // padding; the sub-pages get the standard padded canvas.
   const isOverview = pathname === '/dashboard';
 
+  // Pinned to the viewport height (rather than the body's `min-h-full`, which
+  // only sets a floor) so the sidebar stays put and only `main` scrolls.
   return (
-    <div className="flex flex-1 flex-col md:flex-row">
+    <div className="flex h-dvh flex-col overflow-hidden md:flex-row">
       <Sidebar />
       <main
-        className={`flex flex-1 flex-col overflow-y-auto bg-[#131215] font-[family-name:var(--font-hanken)] text-[#F5F2EE] [color-scheme:dark] ${
+        className={`flex flex-1 flex-col overflow-y-auto scroll-smooth bg-[#131215] font-[family-name:var(--font-hanken)] text-[#F5F2EE] [color-scheme:dark] ${
           isOverview ? '' : 'px-4 py-6 md:px-8 md:py-8'
         }`}
       >

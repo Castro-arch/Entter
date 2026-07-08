@@ -63,6 +63,11 @@ export class CheckoutService {
       },
     });
 
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: event.tenantId },
+      select: { asaasApiKey: true },
+    });
+
     const payment = await this.asaas.createPayment({
       orderId: order.id,
       eventId,
@@ -73,6 +78,9 @@ export class CheckoutService {
         email: dto.buyerEmail,
         phone: dto.buyerPhone,
       },
+      credentials: tenant?.asaasApiKey
+        ? { apiKey: tenant.asaasApiKey }
+        : undefined,
     });
 
     await this.prisma.order.update({
