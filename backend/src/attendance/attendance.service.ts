@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
@@ -32,7 +36,8 @@ export class AttendanceService {
     config: ConfigService,
   ) {
     this.qrSecret =
-      config.get<string>('QR_SECRET') ?? config.getOrThrow<string>('JWT_SECRET');
+      config.get<string>('QR_SECRET') ??
+      config.getOrThrow<string>('JWT_SECRET');
   }
 
   async checkIn(
@@ -48,7 +53,13 @@ export class AttendanceService {
         : dto.participantId!;
 
     const lockKey = `checkin-lock:${participantId}:${dto.eventDayId}`;
-    const acquired = await this.redis.set(lockKey, '1', 'EX', LOCK_TTL_SECONDS, 'NX');
+    const acquired = await this.redis.set(
+      lockKey,
+      '1',
+      'EX',
+      LOCK_TTL_SECONDS,
+      'NX',
+    );
     if (!acquired) {
       // A duplicate scan landed inside the same short window — treat it as
       // the same outcome as the in-flight request rather than erroring.
@@ -194,7 +205,8 @@ export class AttendanceService {
     }
     return {
       clientId,
-      status: attendance.status === 'PRESENT' ? 'already_checked_in' : 'checked_in',
+      status:
+        attendance.status === 'PRESENT' ? 'already_checked_in' : 'checked_in',
       attendance,
     };
   }
@@ -207,7 +219,9 @@ export class AttendanceService {
     if (!warm) {
       const [total, present] = await Promise.all([
         this.prisma.attendance.count({ where: { eventDayId } }),
-        this.prisma.attendance.count({ where: { eventDayId, status: 'PRESENT' } }),
+        this.prisma.attendance.count({
+          where: { eventDayId, status: 'PRESENT' },
+        }),
       ]);
       await this.redis.set(totalKey, total, 'NX');
       await this.redis.set(presentKey, present, 'NX');

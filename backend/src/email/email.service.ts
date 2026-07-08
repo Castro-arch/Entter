@@ -32,7 +32,9 @@ export class EmailService {
       ? nodemailer.createTransport({
           host,
           port: config.get<number>('SMTP_PORT', 587),
-          auth: user ? { user, pass: config.get<string>('SMTP_PASS') } : undefined,
+          auth: user
+            ? { user, pass: config.get<string>('SMTP_PASS') }
+            : undefined,
         })
       : null;
   }

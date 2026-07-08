@@ -55,7 +55,10 @@ export class DashboardService {
       select: { createdAt: true, ticketType: { select: { price: true } } },
     });
 
-    const total = paidOrders.reduce((sum, order) => sum + Number(order.ticketType.price), 0);
+    const total = paidOrders.reduce(
+      (sum, order) => sum + Number(order.ticketType.price),
+      0,
+    );
 
     // Zero-filled so the chart has a continuous x-axis, not just days with sales.
     const byDay = new Map<string, number>();
@@ -74,7 +77,10 @@ export class DashboardService {
 
     return {
       total,
-      last14Days: [...byDay.entries()].map(([date, amount]) => ({ date, amount })),
+      last14Days: [...byDay.entries()].map(([date, amount]) => ({
+        date,
+        amount,
+      })),
     };
   }
 
@@ -84,13 +90,21 @@ export class DashboardService {
         where: { status: 'PAID', event: { tenantId } },
         orderBy: { createdAt: 'desc' },
         take: RECENT_ACTIVITY_LIMIT,
-        select: { buyerName: true, createdAt: true, event: { select: { name: true } } },
+        select: {
+          buyerName: true,
+          createdAt: true,
+          event: { select: { name: true } },
+        },
       }),
       this.prisma.participant.findMany({
         where: { certificateSentAt: { not: null }, event: { tenantId } },
         orderBy: { certificateSentAt: 'desc' },
         take: RECENT_ACTIVITY_LIMIT,
-        select: { name: true, certificateSentAt: true, event: { select: { name: true } } },
+        select: {
+          name: true,
+          certificateSentAt: true,
+          event: { select: { name: true } },
+        },
       }),
       this.prisma.attendance.findMany({
         where: {
@@ -101,7 +115,9 @@ export class DashboardService {
         take: RECENT_ACTIVITY_LIMIT,
         select: {
           checkedInAt: true,
-          participant: { select: { name: true, event: { select: { name: true } } } },
+          participant: {
+            select: { name: true, event: { select: { name: true } } },
+          },
         },
       }),
     ]);
@@ -129,7 +145,9 @@ export class DashboardService {
       .slice(0, RECENT_ACTIVITY_LIMIT);
   }
 
-  private async getAttendanceRates(tenantId: string): Promise<AttendanceRate[]> {
+  private async getAttendanceRates(
+    tenantId: string,
+  ): Promise<AttendanceRate[]> {
     const events = await this.prisma.event.findMany({
       where: { tenantId, participants: { some: {} } },
       orderBy: { createdAt: 'desc' },
@@ -140,7 +158,9 @@ export class DashboardService {
     return Promise.all(
       events.map(async (event) => {
         const [total, present] = await Promise.all([
-          this.prisma.attendance.count({ where: { participant: { eventId: event.id } } }),
+          this.prisma.attendance.count({
+            where: { participant: { eventId: event.id } },
+          }),
           this.prisma.attendance.count({
             where: { participant: { eventId: event.id }, status: 'PRESENT' },
           }),

@@ -9,7 +9,8 @@ export const CERTIFICATES_QUEUE = 'certificates';
   providers: [
     {
       provide: CERTIFICATES_QUEUE,
-      useFactory: (redis: RedisService) => new Queue(CERTIFICATES_QUEUE, { connection: redis }),
+      useFactory: (redis: RedisService) =>
+        new Queue(CERTIFICATES_QUEUE, { connection: redis }),
       inject: [RedisService],
     },
   ],

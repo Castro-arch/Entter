@@ -55,7 +55,12 @@ export class AttendanceController {
     @Query('eventDayId', ParseUUIDPipe) eventDayId: string,
     @Query('q') query: string = '',
   ) {
-    return this.attendanceService.search(user.tenantId, eventId, eventDayId, query);
+    return this.attendanceService.search(
+      user.tenantId,
+      eventId,
+      eventDayId,
+      query,
+    );
   }
 
   @Patch('participants/:participantId/will-not-attend')

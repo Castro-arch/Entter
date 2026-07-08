@@ -31,12 +31,21 @@ export class CertificatesService {
       return;
     }
 
-    const templateResponse = await fetch(participant.event.certificateTemplateUrl);
+    const templateResponse = await fetch(
+      participant.event.certificateTemplateUrl,
+    );
     const templateBytes = await templateResponse.arrayBuffer();
-    const position = (participant.event.certificateNamePosition ??
-      { xPct: 50, yPct: 50, align: 'center' }) as unknown as NamePosition;
+    const position = (participant.event.certificateNamePosition ?? {
+      xPct: 50,
+      yPct: 50,
+      align: 'center',
+    }) as unknown as NamePosition;
 
-    const pdf = await renderCertificate(templateBytes, participant.name, position);
+    const pdf = await renderCertificate(
+      templateBytes,
+      participant.name,
+      position,
+    );
 
     await this.emailService.send({
       to: participant.order.buyerEmail,
@@ -107,7 +116,9 @@ export class CertificatesService {
         where: { id: event.id },
         data: { certificatesDispatchedAt: new Date() },
       });
-      this.logger.log(`Auto-dispatched certificates for event ${event.id} (${queued} queued)`);
+      this.logger.log(
+        `Auto-dispatched certificates for event ${event.id} (${queued} queued)`,
+      );
     }
   }
 

@@ -1,4 +1,10 @@
-import { Controller, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { JwtPayload } from '../auth/types/jwt-payload.type';
@@ -15,7 +21,11 @@ export class CertificatesController {
     @Param('eventId', ParseUUIDPipe) eventId: string,
     @Param('participantId', ParseUUIDPipe) participantId: string,
   ) {
-    return this.certificatesService.sendOne(user.tenantId, eventId, participantId);
+    return this.certificatesService.sendOne(
+      user.tenantId,
+      eventId,
+      participantId,
+    );
   }
 
   @Post('certificates/send-all')

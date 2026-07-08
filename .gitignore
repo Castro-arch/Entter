@@ -23,6 +23,7 @@ pnpm-debug.log*
 # Editor
 .vscode/
 .idea/
+.claude/
 *.swp
 
 # OS

@@ -20,7 +20,10 @@ export interface DaySummary {
   missing: number;
 }
 
-function readCookie(header: string | undefined, name: string): string | undefined {
+function readCookie(
+  header: string | undefined,
+  name: string,
+): string | undefined {
   return header
     ?.split(';')
     .map((part) => part.trim())

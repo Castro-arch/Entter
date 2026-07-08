@@ -1,4 +1,10 @@
-import { Inject, Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  type OnModuleDestroy,
+  type OnModuleInit,
+} from '@nestjs/common';
 import { Queue, Worker, type Job } from 'bullmq';
 import { RedisService } from '../redis/redis.service';
 import { CERTIFICATES_QUEUE } from '../queue/queue.module';

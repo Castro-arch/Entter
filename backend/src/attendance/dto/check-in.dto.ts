@@ -1,4 +1,10 @@
-import { IsEnum, IsOptional, IsString, IsUUID, ValidateIf } from 'class-validator';
+import {
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUUID,
+  ValidateIf,
+} from 'class-validator';
 
 export enum CheckInMethodDto {
   QR = 'QR',

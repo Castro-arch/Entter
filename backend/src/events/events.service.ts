@@ -111,7 +111,9 @@ export class EventsService {
         // Editing the config after an AUTO sweep already ran means it should
         // be eligible to run again under the new settings.
         certificatesDispatchedAt:
-          dto.dispatchMode || dto.autoDelayHours !== undefined ? null : undefined,
+          dto.dispatchMode || dto.autoDelayHours !== undefined
+            ? null
+            : undefined,
       },
       include: eventInclude,
     });
