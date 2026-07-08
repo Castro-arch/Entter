@@ -9,6 +9,7 @@ import { CheckoutModule } from './checkout/checkout.module';
 import { EventsModule } from './events/events.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PublicModule } from './public/public.module';
+import { QueueModule } from './queue/queue.module';
 import { RedisModule } from './redis/redis.module';
 import { UploadsModule } from './uploads/uploads.module';
 
@@ -26,6 +27,7 @@ import { UploadsModule } from './uploads/uploads.module';
     PublicModule,
     CheckoutModule,
     AttendanceModule,
+    QueueModule,
     CertificatesModule,
     UploadsModule,
   ],
