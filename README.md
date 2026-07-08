@@ -102,8 +102,10 @@ entter/
 - [x] Credential positioning editor (drag-to-place, percentage-based)
 - [x] Checkout & payment webhook integration (Asaas)
 - [x] Check-in module (QR + manual) with realtime dashboard
-- [ ] Certificate dispatch module
+- [x] Certificate dispatch module
 - [x] Public event landing pages
+- [x] Credential artwork & certificate template uploads (drag-and-drop, server-hosted — organizers no longer need to host images/PDFs themselves)
+- [x] Organizer dashboard redesign (dark theme design system, categorized navigation, live check-in analytics chart)
 
 ## Getting started
 

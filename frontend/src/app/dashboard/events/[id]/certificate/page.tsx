@@ -1,13 +1,26 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { Alert, Button, TextField } from '@/components/ui';
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import {
+  Alert,
+  Button,
+  EmptyState,
+  FileDropzone,
+  PageHeader,
+  ProgressBar,
+  SectionLabel,
+  SegmentedControl,
+  SelectField,
+  Skeleton,
+  TextField,
+} from '@/components/dash-ui';
 import {
   ApiError,
   certificatesApi,
   eventsApi,
   participantsApi,
+  uploadsApi,
   type CertificateDispatchMode,
   type EventEntity,
   type Participant,
@@ -32,6 +45,8 @@ export default function CertificatePage() {
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [sendingAll, setSendingAll] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'SENT'>('ALL');
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     eventsApi
@@ -43,7 +58,7 @@ export default function CertificatePage() {
         setAutoDelayHours(String(data.certificateAutoDelayHours ?? 24));
       })
       .catch((err) =>
-        setLoadError(err instanceof ApiError ? err.message : 'Failed to load event'),
+        setLoadError(err instanceof ApiError ? err.message : 'Não foi possível carregar o evento'),
       );
   }, [eventId]);
 
@@ -53,7 +68,7 @@ export default function CertificatePage() {
       .then(setParticipants)
       .catch((err) =>
         setParticipantsError(
-          err instanceof ApiError ? err.message : 'Failed to load participants',
+          err instanceof ApiError ? err.message : 'Não foi possível carregar os participantes',
         ),
       );
   }, [eventId]);
@@ -75,7 +90,7 @@ export default function CertificatePage() {
       setSaved(true);
     } catch (err) {
       setSaveError(
-        err instanceof ApiError ? err.message : 'Failed to save certificate settings',
+        err instanceof ApiError ? err.message : 'Não foi possível salvar as configurações',
       );
     } finally {
       setSaving(false);
@@ -87,10 +102,17 @@ export default function CertificatePage() {
     setNotice(null);
     try {
       await certificatesApi.sendOne(eventId, participantId);
-      setNotice('Certificate queued.');
+      setNotice('Certificado na fila de envio.');
+      // Optimistic: the queue delivers async, but for the organizer the job
+      // is done — reflect it immediately in the progress and filters.
+      setParticipants((prev) =>
+        prev?.map((p) =>
+          p.id === participantId ? { ...p, certificateSentAt: new Date().toISOString() } : p,
+        ) ?? prev,
+      );
     } catch (err) {
       setParticipantsError(
-        err instanceof ApiError ? err.message : 'Failed to queue certificate',
+        err instanceof ApiError ? err.message : 'Não foi possível enfileirar o certificado',
       );
     } finally {
       setSendingId(null);
@@ -102,54 +124,93 @@ export default function CertificatePage() {
     setNotice(null);
     try {
       const { queued } = await certificatesApi.sendAll(eventId);
-      setNotice(`${queued} certificate${queued === 1 ? '' : 's'} queued.`);
+      setNotice(`${queued} certificado${queued === 1 ? '' : 's'} na fila de envio.`);
+      loadParticipants();
     } catch (err) {
       setParticipantsError(
-        err instanceof ApiError ? err.message : 'Failed to queue certificates',
+        err instanceof ApiError ? err.message : 'Não foi possível enfileirar os certificados',
       );
     } finally {
       setSendingAll(false);
     }
   }
 
+  const sentCount = useMemo(
+    () => participants?.filter((p) => p.certificateSentAt).length ?? 0,
+    [participants],
+  );
+
+  const filtered = useMemo(() => {
+    if (!participants) return [];
+    const needle = query.trim().toLowerCase();
+    return participants.filter((p) => {
+      if (filter === 'PENDING' && p.certificateSentAt) return false;
+      if (filter === 'SENT' && !p.certificateSentAt) return false;
+      if (!needle) return true;
+      return (
+        p.name.toLowerCase().includes(needle) ||
+        p.order.buyerEmail.toLowerCase().includes(needle)
+      );
+    });
+  }, [participants, filter, query]);
+
   if (loadError) return <Alert>{loadError}</Alert>;
   if (!event) {
-    return <p className="text-sm text-black/60 dark:text-white/60">Loading…</p>;
+    return (
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+        <Skeleton className="h-5 w-40" />
+        <Skeleton className="h-9 w-64" />
+        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
   }
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-8">
-      <h1 className="text-2xl font-semibold tracking-tight">Certificates — {event.name}</h1>
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
+      <PageHeader
+        title="Certificados"
+        subtitle={event.name}
+        backHref={`/dashboard/events/${event.id}`}
+        backLabel="Voltar para o evento"
+      />
 
       <form onSubmit={handleSave} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
-          <h2 className="text-lg font-medium">Template</h2>
-          <p className="text-sm text-black/60 dark:text-white/60">
-            PDF template attendees receive after the event. The name is printed
-            centered on the page.
+          <SectionLabel>Template</SectionLabel>
+          <p className="text-sm text-[#8E8A84]">
+            PDF que os participantes recebem após o evento. O nome é impresso
+            centralizado na página.
           </p>
         </div>
         {saveError && <Alert>{saveError}</Alert>}
-        <TextField
-          label="Template URL (PDF)"
-          placeholder="https://…"
-          value={templateUrl}
-          onChange={(e) => setTemplateUrl(e.target.value)}
+        <FileDropzone
+          label="Template (PDF)"
+          accept="application/pdf"
+          acceptHint="PDF"
+          maxSizeBytes={15 * 1024 * 1024}
+          currentUrl={templateUrl || null}
+          onUpload={(file) => uploadsApi.certificateTemplate(file)}
+          onUploaded={(url) => {
+            setSaved(false);
+            setTemplateUrl(url);
+          }}
+          onRemove={() => {
+            setSaved(false);
+            setTemplateUrl('');
+          }}
         />
-        <label className="flex flex-col gap-1.5">
-          <span className="text-sm font-medium">Dispatch</span>
-          <select
-            className="h-11 rounded-lg border border-black/15 bg-transparent px-3 text-sm outline-none focus:border-foreground dark:border-white/20"
-            value={dispatchMode}
-            onChange={(e) => setDispatchMode(e.target.value as CertificateDispatchMode)}
-          >
-            <option value="MANUAL">Manual — send from the list below</option>
-            <option value="AUTO">Automatic — after the event ends</option>
-          </select>
-        </label>
+        <SelectField
+          label="Envio"
+          value={dispatchMode}
+          onChange={(e) => setDispatchMode(e.target.value as CertificateDispatchMode)}
+        >
+          <option value="MANUAL">Manual — envie pela lista abaixo</option>
+          <option value="AUTO">Automático — após o fim do evento</option>
+        </SelectField>
         {dispatchMode === 'AUTO' && (
           <TextField
-            label="Delay after the last day (hours)"
+            label="Atraso após o último dia (horas)"
             type="number"
             min={0}
             value={autoDelayHours}
@@ -157,59 +218,108 @@ export default function CertificatePage() {
           />
         )}
         <div className="flex items-center gap-3">
-          <Button type="submit" fullWidth={false} disabled={saving}>
-            {saving ? 'Saving…' : 'Save settings'}
+          <Button type="submit" disabled={saving}>
+            {saving ? 'Salvando…' : 'Salvar configurações'}
           </Button>
-          {saved && (
-            <span className="text-sm text-green-600 dark:text-green-400">Saved ✓</span>
-          )}
+          {saved && <span className="text-sm text-[#9BC98E]">Salvo ✓</span>}
         </div>
       </form>
 
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-lg font-medium">Participants</h2>
-          <Button fullWidth={false} disabled={sendingAll} onClick={sendAll}>
-            {sendingAll ? 'Queuing…' : 'Send all certificates'}
+          <SectionLabel>Participantes</SectionLabel>
+          <Button variant="light" disabled={sendingAll} onClick={sendAll}>
+            {sendingAll ? 'Enfileirando…' : 'Enviar todos os certificados'}
           </Button>
         </div>
 
-        {participantsError && <Alert>{participantsError}</Alert>}
-        {notice && <p className="text-sm text-green-600 dark:text-green-400">{notice}</p>}
-
-        {!participants && (
-          <p className="text-sm text-black/60 dark:text-white/60">Loading…</p>
-        )}
-
-        {participants?.length === 0 && (
-          <div className="rounded-xl border border-dashed border-black/15 px-6 py-8 text-center dark:border-white/15">
-            <p className="text-sm text-black/60 dark:text-white/60">No participants yet.</p>
+        {participants && participants.length > 0 && (
+          <div className="flex flex-col gap-2 rounded-[14px] border border-white/10 p-4">
+            <div className="flex items-center justify-between text-[12.5px]">
+              <span className="text-[#8E8A84]">
+                <span className="font-bold text-[#F5F2EE]">{sentCount}</span> de{' '}
+                <span className="font-bold text-[#F5F2EE]">{participants.length}</span>{' '}
+                certificados enviados
+              </span>
+              <span className="font-bold tabular-nums text-[#F5F2EE]">
+                {Math.round((sentCount / participants.length) * 100)}%
+              </span>
+            </div>
+            <ProgressBar value={(sentCount / participants.length) * 100} />
           </div>
         )}
 
+        {participantsError && <Alert>{participantsError}</Alert>}
+        {notice && <p className="text-sm text-[#9BC98E]">{notice}</p>}
+
+        {!participants && <Skeleton className="h-40 w-full" />}
+
+        {participants?.length === 0 && (
+          <EmptyState>Nenhum participante ainda.</EmptyState>
+        )}
+
         {participants && participants.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <SegmentedControl<'ALL' | 'PENDING' | 'SENT'>
+              value={filter}
+              onChange={setFilter}
+              options={[
+                { value: 'ALL', label: 'Todos', count: participants.length },
+                { value: 'PENDING', label: 'Pendentes', count: participants.length - sentCount },
+                { value: 'SENT', label: 'Enviados', count: sentCount },
+              ]}
+            />
+            <div className="flex h-9 w-full max-w-[220px] items-center gap-2 rounded-full border border-white/10 bg-[#1C1B1F] px-3.5">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8E8A84" strokeWidth="2" strokeLinecap="round">
+                <circle cx="11" cy="11" r="7" />
+                <path d="M21 21l-4.3-4.3" />
+              </svg>
+              <input
+                type="search"
+                placeholder="Buscar…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="w-full bg-transparent text-[13px] text-[#F5F2EE] outline-none placeholder:text-[#8E8A84]"
+              />
+            </div>
+          </div>
+        )}
+
+        {participants && participants.length > 0 && filtered.length === 0 && (
+          <p className="text-sm text-[#8E8A84]">
+            Nenhum participante corresponde à busca ou ao filtro.
+          </p>
+        )}
+
+        {filtered.length > 0 && (
           <ul className="flex flex-col gap-2">
-            {participants.map((p) => (
+            {filtered.map((p) => (
               <li
                 key={p.id}
-                className="flex items-center justify-between gap-4 rounded-lg border border-black/10 px-4 py-3 dark:border-white/10"
+                className="flex items-center justify-between gap-4 rounded-[12px] border border-white/10 bg-[#1C1B1F] px-4 py-3"
               >
-                <div className="flex flex-col gap-0.5">
-                  <span className="font-medium">{p.name}</span>
-                  <span className="text-sm text-black/50 dark:text-white/50">
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <span className="truncate font-semibold text-[#F5F2EE]">{p.name}</span>
+                  <span className="truncate text-[12.5px] text-[#8E8A84]">
                     {p.order.buyerEmail}
-                    {p.willNotAttend && ' · will not attend'}
+                    {p.willNotAttend && ' · não vai comparecer'}
                   </span>
                 </div>
                 {p.certificateSentAt ? (
-                  <span className="text-sm text-green-600 dark:text-green-400">✓ Sent</span>
+                  <span className="flex shrink-0 items-center gap-1.5 text-[13px] font-semibold text-[#9BC98E]">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 12l5 5L20 7" />
+                    </svg>
+                    Enviado
+                  </span>
                 ) : (
                   <Button
-                    fullWidth={false}
+                    variant="secondary"
+                    className="h-8 shrink-0 px-3 text-xs"
                     disabled={sendingId === p.id || p.willNotAttend}
                     onClick={() => sendOne(p.id)}
                   >
-                    {sendingId === p.id ? 'Queuing…' : 'Send certificate'}
+                    {sendingId === p.id ? 'Enfileirando…' : 'Enviar certificado'}
                   </Button>
                 )}
               </li>

@@ -303,6 +303,38 @@ export interface AttendanceSearchResult {
   attendance: { id: string; status: AttendanceRowStatus; checkedInAt: string | null } | null;
 }
 
+export interface UploadResult {
+  url: string;
+}
+
+/** Separate from `request()`: multipart bodies must not carry a manual
+ * `Content-Type` header — the browser sets the boundary itself. */
+async function uploadFile(path: string, file: File): Promise<UploadResult> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+  } catch {
+    throw new ApiError('Unable to reach the server. Is the API running?', 0);
+  }
+
+  if (!response.ok) {
+    throw new ApiError(await extractErrorMessage(response), response.status);
+  }
+  return (await response.json()) as UploadResult;
+}
+
+export const uploadsApi = {
+  credentialArtwork: (file: File) => uploadFile('/uploads/credential-artwork', file),
+  certificateTemplate: (file: File) => uploadFile('/uploads/certificate-template', file),
+};
+
 export const attendanceApi = {
   checkIn: (eventId: string, input: CheckInInput) =>
     request<CheckInResult>(`/events/${eventId}/attendance/check-in`, {

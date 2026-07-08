@@ -3,8 +3,8 @@
 import { useEffect, useState, type ChangeEvent } from 'react';
 import { Image as KonvaImage, Layer, Stage, Text } from 'react-konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
-import { Alert, Button, TextField } from '@/components/ui';
-import { ApiError, eventsApi, type NamePosition, type TextAlign } from '@/lib/api';
+import { Alert, Button, FileDropzone, SelectField, TextField } from '@/components/dash-ui';
+import { ApiError, eventsApi, uploadsApi, type NamePosition, type TextAlign } from '@/lib/api';
 
 const STAGE_WIDTH = 520;
 const PLACEHOLDER_HEIGHT = 300;
@@ -36,9 +36,8 @@ export default function CredentialEditor({
   initialPosition,
 }: Props) {
   const [artworkUrl, setArtworkUrl] = useState(initialArtworkUrl ?? '');
-  const [loadedUrl, setLoadedUrl] = useState(initialArtworkUrl ?? '');
   const [image, setImage] = useState<HTMLImageElement | null>(null);
-  const [sampleName, setSampleName] = useState('Attendee Name');
+  const [sampleName, setSampleName] = useState('Nome do Participante');
   const [position, setPosition] = useState<Required<NamePosition>>({
     ...DEFAULT_POSITION,
     ...initialPosition,
@@ -48,7 +47,7 @@ export default function CredentialEditor({
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    if (!loadedUrl) return;
+    if (!artworkUrl) return;
     let cancelled = false;
     const img = new window.Image();
     img.crossOrigin = 'anonymous';
@@ -58,13 +57,13 @@ export default function CredentialEditor({
     img.onerror = () => {
       if (cancelled) return;
       setImage(null);
-      setError('Could not load that image URL.');
+      setError('Não foi possível carregar essa imagem.');
     };
-    img.src = loadedUrl;
+    img.src = artworkUrl;
     return () => {
       cancelled = true;
     };
-  }, [loadedUrl]);
+  }, [artworkUrl]);
 
   const stageHeight = image
     ? Math.round(STAGE_WIDTH * (image.height / image.width))
@@ -94,13 +93,13 @@ export default function CredentialEditor({
     setSaving(true);
     try {
       await eventsApi.updateCredential(eventId, {
-        artworkUrl: loadedUrl || undefined,
+        artworkUrl: artworkUrl || undefined,
         namePosition: position,
       });
       setSaved(true);
     } catch (err) {
       setError(
-        err instanceof ApiError ? err.message : 'Failed to save the credential.',
+        err instanceof ApiError ? err.message : 'Não foi possível salvar a credencial.',
       );
     } finally {
       setSaving(false);
@@ -109,32 +108,30 @@ export default function CredentialEditor({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-end gap-2">
-        <TextField
-          label="Artwork image URL"
-          type="url"
-          className="flex-1"
-          value={artworkUrl}
-          onChange={(event) => setArtworkUrl(event.target.value)}
-          hint="Paste a public image URL, then load it to position the name."
-        />
-        <Button
-          type="button"
-          variant="secondary"
-          fullWidth={false}
-          onClick={() => {
-            setError(null);
-            setLoadedUrl(artworkUrl.trim());
-          }}
-        >
-          Load
-        </Button>
-      </div>
+      <FileDropzone
+        label="Arte da credencial"
+        accept="image/png,image/jpeg,image/webp"
+        acceptHint="PNG, JPG ou WEBP"
+        maxSizeBytes={8 * 1024 * 1024}
+        currentUrl={artworkUrl || null}
+        previewAsImage
+        onUpload={(file) => uploadsApi.credentialArtwork(file)}
+        onUploaded={(url) => {
+          setError(null);
+          setSaved(false);
+          setArtworkUrl(url);
+        }}
+        onRemove={() => {
+          setSaved(false);
+          setArtworkUrl('');
+          setImage(null);
+        }}
+      />
 
       {error && <Alert>{error}</Alert>}
 
       <div
-        className="overflow-hidden rounded-xl border border-black/10 dark:border-white/10"
+        className="overflow-hidden rounded-[14px] border border-white/10 bg-[#1C1B1F]"
         style={{ width: STAGE_WIDTH, maxWidth: '100%' }}
       >
         <Stage width={STAGE_WIDTH} height={stageHeight}>
@@ -143,7 +140,7 @@ export default function CredentialEditor({
               <KonvaImage image={image} width={STAGE_WIDTH} height={stageHeight} />
             )}
             <Text
-              text={sampleName || 'Attendee Name'}
+              text={sampleName || 'Nome do Participante'}
               x={(position.xPct / 100) * STAGE_WIDTH}
               y={(position.yPct / 100) * stageHeight}
               fontSize={fontSize}
@@ -158,35 +155,32 @@ export default function CredentialEditor({
       </div>
 
       {!image && (
-        <p className="text-sm text-black/50 dark:text-white/50">
-          Load an artwork above to preview the name over it. You can still drag
-          the sample name to set its position.
+        <p className="text-sm text-[#8E8A84]">
+          Carregue uma arte acima para pré-visualizar o nome sobre ela. Você já
+          pode arrastar o nome de exemplo para definir a posição.
         </p>
       )}
 
       <div className="grid grid-cols-2 gap-4">
         <TextField
-          label="Preview name"
+          label="Nome de exemplo"
           value={sampleName}
           onChange={(event) => setSampleName(event.target.value)}
         />
+        <SelectField
+          label="Alinhamento"
+          value={position.align}
+          onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+            updatePosition('align', event.target.value as TextAlign)
+          }
+        >
+          <option value="left">Esquerda</option>
+          <option value="center">Centro</option>
+          <option value="right">Direita</option>
+        </SelectField>
         <label className="flex flex-col gap-1.5">
-          <span className="text-sm font-medium">Alignment</span>
-          <select
-            className="h-11 rounded-lg border border-black/15 bg-transparent px-3 text-sm outline-none focus:border-foreground dark:border-white/20"
-            value={position.align}
-            onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-              updatePosition('align', event.target.value as TextAlign)
-            }
-          >
-            <option value="left">Left</option>
-            <option value="center">Center</option>
-            <option value="right">Right</option>
-          </select>
-        </label>
-        <label className="flex flex-col gap-1.5">
-          <span className="text-sm font-medium">
-            Font size ({position.fontPct}% of height)
+          <span className="text-[13px] font-semibold text-[#F5F2EE]">
+            Tamanho da fonte ({position.fontPct}% da altura)
           </span>
           <input
             type="range"
@@ -197,27 +191,25 @@ export default function CredentialEditor({
             onChange={(event) =>
               updatePosition('fontPct', Number(event.target.value))
             }
-            className="h-11"
+            className="h-11 accent-[#F0561D]"
           />
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="text-sm font-medium">Color</span>
+          <span className="text-[13px] font-semibold text-[#F5F2EE]">Cor</span>
           <input
             type="color"
             value={position.color}
             onChange={(event) => updatePosition('color', event.target.value)}
-            className="h-11 w-full rounded-lg border border-black/15 bg-transparent px-1 dark:border-white/20"
+            className="h-11 w-full rounded-[10px] border border-white/10 bg-[#1C1B1F] px-1"
           />
         </label>
       </div>
 
       <div className="flex items-center gap-3">
-        <Button type="button" fullWidth={false} onClick={handleSave} disabled={saving}>
-          {saving ? 'Saving…' : 'Save credential'}
+        <Button type="button" onClick={handleSave} disabled={saving}>
+          {saving ? 'Salvando…' : 'Salvar credencial'}
         </Button>
-        {saved && (
-          <span className="text-sm text-green-600 dark:text-green-400">Saved ✓</span>
-        )}
+        {saved && <span className="text-sm text-[#9BC98E]">Salvo ✓</span>}
       </div>
     </div>
   );

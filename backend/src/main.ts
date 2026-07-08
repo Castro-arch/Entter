@@ -1,14 +1,21 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
+import { UPLOADS_ROOT } from './uploads/uploads.constants';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.use(cookieParser());
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.useWebSocketAdapter(new IoAdapter(app));
+
+  // Uploaded credential artwork / certificate templates are plain public
+  // files — same trust model as the URLs organizers used to paste — so
+  // they're served directly rather than proxied through a route handler.
+  app.useStaticAssets(UPLOADS_ROOT, { prefix: '/uploads/' });
 
   // The organizer dashboard runs on a separate origin and authenticates via the
   // httpOnly `access_token` cookie, so credentialed CORS must be enabled with an

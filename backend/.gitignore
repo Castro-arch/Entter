@@ -1,0 +1,4 @@
+# Runtime storage for uploaded credential artwork / certificate templates
+# (see uploads.constants.ts) — anchored to the backend root so it doesn't
+# also match the src/uploads/ module.
+/uploads/
