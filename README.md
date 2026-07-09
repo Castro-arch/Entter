@@ -2,136 +2,253 @@
 
 # Entter
 
-**Event credentialing & check-in platform built for speed, reliability, and scale.**
+### Modern Event Ticketing, Digital Credentials & Lightning-Fast QR Check-in
 
-*Ticketing, personalized credential generation, and QR-based check-in engineered to work flawlessly even on unstable venue networks.*
+*A scalable event management platform built to keep check-ins fast, reliable, and resilient—even under unstable network conditions.*
 
 [![Status](https://img.shields.io/badge/status-in%20development-yellow)](#roadmap)
 [![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
-[![Node](https://img.shields.io/badge/node-%3E%3D18-339933?logo=node.js&logoColor=white)](https://nodejs.org)
-[![Next.js](https://img.shields.io/badge/Next.js-App%20Router-000000?logo=next.js&logoColor=white)](https://nextjs.org)
-[![NestJS](https://img.shields.io/badge/NestJS-backend-E0234E?logo=nestjs&logoColor=white)](https://nestjs.com)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-database-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org)
-[![Redis](https://img.shields.io/badge/Redis-cache%2Flocks-DC382D?logo=redis&logoColor=white)](https://redis.io)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18-339933?logo=node.js&logoColor=white)](https://nodejs.org)
+[![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=next.js&logoColor=white)](https://nextjs.org)
+[![NestJS](https://img.shields.io/badge/NestJS-E0234E?logo=nestjs&logoColor=white)](https://nestjs.com)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)](https://postgresql.org)
+[![Redis](https://img.shields.io/badge/Redis-DC382D?logo=redis&logoColor=white)](https://redis.io)
 
 </div>
 
 ---
 
-## The problem
+> **Entter** is an event management platform focused on **performance, reliability, and user experience**. It combines ticket sales, personalized credential generation, QR-based attendance tracking, and automated certificate delivery into a single system designed to scale from small meetups to large conferences.
 
-Event check-in software typically fails at the moment it matters most: **hundreds of people arriving in a short window, on venue Wi-Fi that can't keep up.** Duplicate scans, stalled dashboards, and staff unable to work offline are the norm, not the exception.
+---
 
-Entter is designed around a single constraint: **check-in must be fast and correct even when the network isn't.**
+# ✨ Features
 
-## What it does
+| Feature | Description |
+|----------|-------------|
+| 🎟 Ticketing | Sell tickets with integrated payments via Asaas. |
+| 🪪 Digital Credentials | Automatically generate personalized event badges from organizer templates. |
+| 🖱 Visual Editor | Drag-and-drop positioning editor using percentage-based coordinates. |
+| 📱 QR Check-in | High-speed QR scanning with duplicate protection. |
+| 📶 Offline Support | Continue scanning even without internet. Synchronizes automatically once online. |
+| 👥 Manual Attendance | Roll-call mode for single-day events. |
+| 📊 Live Dashboard | Real-time attendance analytics powered by WebSockets. |
+| 📄 Certificates | Automatic or manual certificate generation and delivery. |
 
-- **Ticketing** — attendees purchase tickets directly through checkout (Asaas integration); payment confirmation is the single source of truth that provisions each attendee.
-- **Personalized credentials** Organizers upload their own artwork; the system composites each attendee's name onto it automatically, with a visual drag-and-drop positioning editor (percentage-based coordinates, resolution-independent).
-- **QR-based & manual check-in** Single-day events unlock a manual roll-call view; multi-day events unlock QR scanning with manual fallback. Same data model powers both.
-- **Certificates** Dispatched manually or automatically on a delay after the event ends.
+---
 
-## Engineering decisions worth reading
+# 🚀 Why Entter?
 
-This is the part meant to actually be read, not skimmed:
+Most event platforms work perfectly...
 
-| Decision | Why |
-|---|---|
-| **Client-side signature validation before server round-trip** | The QR payload is a signed token (`participant_id` + `event_id`). The client verifies the signature locally and shows the attendee's name *instantly* — the server call to persist the check-in happens in parallel, not on the critical path of perceived speed. |
-| **Offline-first check-in queue (IndexedDB)** | Venue Wi-Fi degrades under load. Every scan is queued locally and optimistically confirmed; a background worker syncs to the server with exponential backoff once connectivity returns. Staff never stop scanning because the network hiccupped. |
-| **Redis lock + Postgres unique constraint, not either/or** | Duplicate scans are inevitable when multiple staff members work the same door. A short-lived Redis lock (`SET NX EX 5`) rejects near-simultaneous duplicates before they hit the database; a `UNIQUE(participant_id, event_day_id)` constraint is the authoritative backstop. Two layers, two different failure modes covered. |
-| **Percentage-based coordinates for name placement** | Credential and certificate templates get re-rendered at final output resolution, which rarely matches the editor preview. Storing `x_pct`/`y_pct` instead of absolute pixels means the positioning is correct regardless of the artwork's actual dimensions. |
-| **Attendance modeled independently of check-in method** | A 1-day event (manual roll-call) and a multi-day event (QR + fallback) are the *same* underlying table and the *same* aggregate queries — only the UI differs. This avoided a fork in the data model that would have doubled the surface area for bugs. |
+...until hundreds of attendees arrive simultaneously.
 
-## Architecture
+Typical problems include:
+
+- Slow venue Wi-Fi
+- Duplicate check-ins
+- Frozen dashboards
+- Staff unable to continue working offline
+
+Entter was engineered around a single principle:
+
+> **Check-in must remain fast, accurate, and reliable regardless of network quality.**
+
+---
+
+# 🏗 Engineering Highlights
+
+These are the core architectural decisions that differentiate Entter.
+
+| Decision | Why it matters |
+|-----------|----------------|
+| **Client-side signature validation** | QR payloads contain signed participant information. The client validates the signature locally, immediately displaying attendee information while the server persists the attendance asynchronously. |
+| **Offline-first synchronization** | Every scan is stored in IndexedDB when offline and synchronized later with exponential backoff. Staff never need to stop scanning because connectivity is lost. |
+| **Redis Lock + PostgreSQL Constraint** | Redis prevents simultaneous duplicate scans while PostgreSQL guarantees data integrity through a UNIQUE constraint. Two independent protection layers cover different failure scenarios. |
+| **Percentage-based positioning** | Credential layouts remain perfectly aligned regardless of export resolution or template dimensions. |
+| **Unified attendance model** | Manual attendance and QR check-ins share the same database model, avoiding duplicated business logic while simplifying analytics. |
+
+---
+
+# 🏛 Architecture
 
 ```mermaid
 flowchart TD
     A[Landing Page] --> B[Checkout / Asaas]
     B --> C{Payment Confirmed?}
-    C -->|Webhook| D[Create Participant + Signed QR Token]
-    D --> E[BullMQ: Render Credential]
-    E --> F[Send Credential via Email/WhatsApp]
 
-    G[Check-in Client] --> H{Network Available?}
-    H -->|Yes| I[POST /attendance/check-in]
-    H -->|No| J[Queue in IndexedDB]
-    J -->|Reconnect| K[POST /attendance/batch-sync]
-    I --> L[Redis Lock + Postgres UNIQUE constraint]
+    C -->|Webhook| D[Create Participant + Signed QR]
+    D --> E[BullMQ Credential Generation]
+    E --> F[Email / WhatsApp Delivery]
+
+    G[Check-in Client] --> H{Online?}
+
+    H -->|Yes| I[POST Attendance]
+    H -->|No| J[IndexedDB Queue]
+
+    J -->|Reconnect| K[Batch Synchronization]
+
+    I --> L[Redis Lock + PostgreSQL UNIQUE]
     K --> L
-    L --> M[Redis Counters]
-    M --> N[Realtime Dashboard via WebSocket]
 
-    O[BullMQ Scheduled Job] -->|event.end_date + delay| P[Send Certificates]
+    L --> M[Realtime Counters]
+    M --> N[Dashboard via WebSocket]
+
+    O[Scheduled Job]
+    O --> P[Automatic Certificate Delivery]
 ```
 
-Full technical specification — schema, module breakdown, endpoint reference, and security model — lives in [`docs/ARQUITETURA_credenciamento_eventos.md`](./docs/ARQUITETURA_credenciamento_eventos.md).
+For the complete system specification—including modules, database schema, API reference, and security architecture—see:
 
-## Tech stack
+**`docs/ARQUITETURA_credenciamento_eventos.md`**
 
-| Layer | Choice |
-|---|---|
-| Frontend | Next.js (App Router), TypeScript, Tailwind |
+---
+
+# 🛠 Tech Stack
+
+| Layer | Technologies |
+|---------|-------------|
+| Frontend | Next.js 15, React, TypeScript, Tailwind CSS |
 | Backend | NestJS, TypeScript |
 | Database | PostgreSQL |
-| Cache / Locks / Queues | Redis, BullMQ |
+| ORM | Prisma |
+| Cache | Redis |
+| Queues | BullMQ |
+| Authentication | JWT + HTTP-only Cookies |
 | Payments | Asaas |
-| Positioning editor | React + react-konva |
-| Credential compositing | sharp |
-| Certificate generation | pdf-lib |
-| QR scanning | BarcodeDetector API (native), zxing-wasm fallback |
-| Realtime | WebSocket (NestJS Gateway) / SSE |
+| Image Processing | Sharp |
+| PDF Generation | pdf-lib |
+| QR Scanner | BarcodeDetector API + ZXing fallback |
+| Real-time | WebSockets |
 
-## Repository structure
+---
 
-```
+# 📂 Repository Structure
+
+```text
 entter/
-├── backend/     # NestJS API
-├── frontend/    # Next.js app
-├── docs/        # Architecture and technical documentation
+│
+├── backend/
+│   ├── src/
+│   └── prisma/
+│
+├── frontend/
+│   ├── app/
+│   ├── components/
+│   └── public/
+│
+├── docs/
+│
 ├── README.md
 └── LICENSE
 ```
 
-## Roadmap
+---
 
-- [x] System architecture & data model
-- [x] QR check-in performance design (offline-first, locking strategy)
-- [x] Organizer authentication (API + dashboard login/registration)
-- [x] Event creation wizard (details, dates, ticket types)
-- [x] Credential positioning editor (drag-to-place, percentage-based)
-- [x] Checkout & payment webhook integration (Asaas)
-- [x] Check-in module (QR + manual) with realtime dashboard
-- [x] Certificate dispatch module
-- [x] Public event landing pages
-- [x] Credential artwork & certificate template uploads (drag-and-drop, server-hosted — organizers no longer need to host images/PDFs themselves)
-- [x] Organizer dashboard redesign (dark theme design system, categorized navigation, live check-in analytics chart)
+# ⚙️ Getting Started
 
-## Getting started
+## Clone the repository
 
 ```bash
-npm install                            # installs backend + frontend workspaces
+git clone https://github.com/Castro-arch/Entter.git
 
-# Backend API (http://localhost:3000)
-cp backend/.env.example backend/.env         # set DATABASE_URL and JWT_SECRET
-npm run --workspace backend prisma:migrate   # apply the schema to PostgreSQL
+cd Entter
+```
+
+## Install dependencies
+
+```bash
+npm install
+```
+
+## Backend
+
+```bash
+cp backend/.env.example backend/.env
+
+npm run --workspace backend prisma:migrate
+
 npm run --workspace backend start:dev
+```
 
-# Organizer dashboard (http://localhost:3001) — in a second terminal
-cp frontend/.env.example frontend/.env.local # points NEXT_PUBLIC_API_URL at the API
+Runs on:
+
+```
+http://localhost:3000
+```
+
+---
+
+## Frontend
+
+```bash
+cp frontend/.env.example frontend/.env.local
+
 npm run --workspace frontend dev
 ```
 
-The dashboard runs on a separate origin and authenticates against the API via
-the httpOnly session cookie, so the backend allows credentialed CORS from
-`FRONTEND_URL` (see `backend/.env.example`).
+Runs on:
 
-See [`backend/README.md`](./backend/README.md) for backend-specific details (auth endpoints, migrations) and [`frontend/README.md`](./frontend/README.md) for the dashboard.
+```
+http://localhost:3001
+```
 
-## Author
+The frontend authenticates against the backend using secure HTTP-only cookies. Configure `FRONTEND_URL` appropriately in the backend environment variables.
 
-Built by **Brazillian Mark** — the boss.
+---
 
-## License
+# 📈 Roadmap
 
-MIT see [LICENSE](./LICENSE).
+- ✅ Authentication system
+- ✅ Event management
+- ✅ Ticket sales
+- ✅ Payment integration (Asaas)
+- ✅ Credential generation
+- ✅ Drag-and-drop credential editor
+- ✅ QR Check-in
+- ✅ Offline-first synchronization
+- ✅ Live dashboard
+- ✅ Certificate generation
+- ✅ Public event pages
+- ✅ Organizer dashboard redesign
+
+### Planned
+
+- ⏳ Multi-language support
+- ⏳ Email template customization
+- ⏳ AWS S3 storage
+- ⏳ Event reports
+- ⏳ Organizer roles & permissions
+- ⏳ Mobile check-in application
+
+---
+
+# 🤝 Contributing
+
+Contributions are always welcome.
+
+If you'd like to improve Entter:
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push your branch
+5. Open a Pull Request
+
+Bug reports, ideas, and discussions are also appreciated.
+
+---
+
+# 📄 License
+
+This project is licensed under the **MIT License**.
+
+See the [LICENSE](LICENSE) file for details.
+
+---
+
+# 👨‍💻 Author
+
+Developed by **Castro**.
+
+If you found this project interesting, consider giving it a ⭐ on GitHub.
